@@ -1,0 +1,38 @@
+.step {
+  display: none;
+}
+
+.step.current {
+  display: initial;
+}
+
+input.invalid {
+  border-color: red;
+}
+
+.bar {
+  fill: steelblue;
+}
+
+.active {
+  fill: brown;
+}
+
+.dot {
+  fill: steelblue;
+}
+
+.dot:hover {
+  fill: brown;
+}
+
+svg {
+  font: 14px sans-serif;
+}
+
+table {
+  margin-top: 20px;
+  margin-left: 100px;
+  font: 20px sans-serif;
+  text-align: center;
+}

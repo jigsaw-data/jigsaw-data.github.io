@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+	.bar {
+		fill: steelblue;
+	}
+	
+	.active {
+		fill: brown;
+	}
+	
+	.dot {
+		fill: steelblue;
+	}
+	
+	.dot:hover {
+		fill: brown;
+	}
+	
+	svg {
+		font: 14px sans-serif;
+	}
+	
+	table {
+		margin-top: 20px;
+		margin-left: 100px;
+		font: 20px sans-serif;
+		text-align: center;
+	}
+	
+</style>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<svg width="700" height="500" class="month_chart"></svg>
+<svg width="500" height="500" class="users_chart"></svg>
+<table border="1" cellpadding="5">
+	<tr >
+		<td>Customers</td>
+		<td id="customers"></td>
+	</tr>
+	<tr>
+		<td>Time Spent</td>
+		<td id="time"></td>
+	</tr>
+	<tr>
+		<td>Amount Spent</td>
+		<td id="amount"></td>
+	</tr>
+</table>
+<script>
+	
+	function getRandomInt(min, max) {
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	};
+	
+	var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+	
+	var data = []
+	for (i = 0; i < 100; i++) {
+		data.push({month: months[getRandomInt(0, 11)], time: getRandomInt(1, 60), amount: getRandomInt(0, 300)});
+	};
+	
+	var month_counts = [];
+	for (var i in months) {
+		var m = months[i];
+		month_counts.push({name: m, count: data.filter(function(d){ return d.month === m; }).length});
+	};
+
+	var selected_months = [];
+	
+	var month_svg = d3.select(".month_chart"),
+			margin = {top: 20, right: 30, bottom: 50, left: 70},
+			width = month_svg.attr("width") - margin.left - margin.right,
+			height = month_svg.attr("height") - margin.top - margin.bottom;
+	
+	var x_month = d3.scaleBand()
+		.domain(months)
+		.rangeRound([0, width]).padding(0.1);
+	
+	var y_month = d3.scaleLinear()
+		.domain([0, d3.max(month_counts, function(d) { return d.count; })])	
+		.rangeRound([height, 0]);
+	
+	var g_month = month_svg.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+	
+	g_month.append("g")
+		.attr("class", "axis axis--x")
+		.attr("transform", "translate(0," + height + ")")
+		.call(d3.axisBottom(x_month))
+		
+	month_svg.append("text")
+		.attr("y", height + margin.top + margin.bottom)
+		.attr("x", (width + margin.left + margin.right) / 2)
+		.attr("text-anchor", "middle")
+		.text("Month");
+	
+	month_svg.append("text")
+		.attr("transform", "rotate(-90)")
+		.attr("y", 6)
+		.attr("dy", "0.71em")
+		.attr("text-anchor", "middle")
+		.attr("x", -height / 2)
+		.text("Number of users");
+	
+	g_month.append("g")
+		.attr("class", "axis axis--y")
+		.call(d3.axisLeft(y_month));
+
+	var bar = g_month.append("g")
+			.attr("class", "bar")
+		.selectAll("rect")
+		.data(month_counts)
+		.enter().append("rect")
+			.attr("class", "bar")
+			.attr("x", function(d) {return x_month(d.name); })
+			.attr("y", function(d) {return y_month(d.count); })
+			.attr("width", x_month.bandwidth())
+				.attr("height", function(d) { return height - y_month(d.count); });
+	
+	var brush = d3.brushX()
+		.extent([[margin.left, margin.top], [margin.left+width, margin.top+height]])
+		.on("start brush", brushmove)
+		.on("end", brushend);
+
+	function brushmove() {
+		var s = d3.event.selection;
+		if (s == null) {
+			bar.classed("active", false);
+		} else {
+			selected_months = []
+			bar.classed("active", function(d) {
+				if (x_month(d.name) + x_month.bandwidth() > s[0] - margin.left && x_month(d.name) < s[1] - margin.left) {
+					selected_months.push(d.name);
+					return true;
+				} else {
+					return false;
+				}
+			});
+		}
+	}
+	
+	month_svg.append("g")
+    .attr("class", "brush")
+    .call(brush);
+		
+	var user_svg = d3.select(".users_chart")
+		width = user_svg.attr("width") - margin.left - margin.right,
+		height = user_svg.attr("height") - margin.top - margin.bottom;
+	
+	var g_user = user_svg.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+	
+	var x_user = d3.scaleLinear().range([0, width]);
+	var y_user = d3.scaleLinear().range([height, 0]);
+	
+	user_svg.append("text")
+		.attr("y", height + margin.top + margin.bottom)
+		.attr("dy", "-0.71em")
+		.attr("x", (width + margin.right + margin.left) / 2)
+		.attr("text-anchor", "middle")
+		.text("Time Spent (min)");
+
+	user_svg.append("text")
+		.attr("transform", "rotate(-90)")
+		.attr("y", 6)
+		.attr("dy", "0.71em")
+		.attr("x", -(height + margin.top + margin.bottom) / 2)
+		.text("Amount Spent ($)");
+	
+	function render_data_selection(data){
+		
+		g_user.selectAll("g").remove();
+		g_user.selectAll("circle").remove();
+		
+		x_user.domain([0, d3.max(data, function(d){ return d.time; })]);
+		y_user.domain([0, d3.max(data, function(d){ return d.amount; })]);
+		
+		g_user.append("g")
+			.attr("class", "axis axis--x")
+			.attr("transform", "translate(0," + height + ")")
+			.call(d3.axisBottom(x_user));
+		
+		g_user.append("g")
+			.attr("class", "axis axis--y")
+			.call(d3.axisLeft(y_user));
+			
+		g_user.selectAll(".dot")
+			.data(data)
+			.enter().append("circle")
+				.attr("class", "dot")
+				.attr("r", 3.5)
+				.attr("cx", function(d) { return x_user(d.time); })
+				.attr("cy", function(d) { return y_user(d.amount); });
+		
+		d3.select("#customers").text(data.length);
+		d3.select("#time").text(d3.sum(data, function(d){ return d.time; }) + " minutes");
+		d3.select("#amount").text("$" + d3.sum(data, function(d){ return d.amount; }));
+	}
+	
+	
+	render_data_selection(data);
+	
+	function brushend() {
+		var user_data = [];
+		for (var i in data) {
+			var d = data[i];
+			if (selected_months.indexOf(d.month) !== -1) {
+				user_data.push(d);
+			}
+		}
+		
+		render_data_selection(user_data);
+
+	};
+</script>

@@ -1,0 +1,24 @@
+{
+  "tasks": [
+    {
+      "name": "test_task",
+      "params": [
+        {
+          "name": "testFactor",
+          "type": "UniformChoice",
+          "options": [0, 1, 2, 3, 4]
+        },
+        {
+          "name": "usersDelayIdx",
+          "type": "UniformChoice",
+          "options": [0]
+        },
+        {
+          "name": "totalsDelayIdx",
+          "type": "UniformChoice",
+          "options": [0]
+        }
+      ]
+    }
+  ]
+}
