@@ -58,6 +58,10 @@
         fill: brown;
       }
 
+      .highlight {
+        background: yellow;
+      }
+
       svg {
         font: 14px sans-serif;
       }
@@ -135,6 +139,7 @@
 
       #input {
         margin-top: 10px;
+        /*border-style: solid;*/
       }
 
       #current-month {
@@ -181,9 +186,11 @@
       <select id="correspondence-config" name="correspondence-config">
         <option value="NONE" selected>NONE</option>
         <option value="LABEL">LABEL</option>
+        <option value="SHOWALL">SHOWALL</option>
       </select>
       <label for="task-config">Task type:</label>
       <select id="task-config" name="task-config">
+        <option value="THRESHOLD" selected>THRESHOLD</option>
         <option value="EXTREMA" selected>EXTREMA</option>
         <option value="TREND">TREND</option>
       </select>
@@ -234,9 +241,6 @@
           <div class="month-chart-wrapper">
             <svg width="400" height="300" class="month_chart"></svg>
           </div>
-          <div class="users-chart-wrapper" style="display: none">
-            <svg width="400" height="300" class="users_chart"></svg>
-          </div>
           <div id="slider-wrapper">
             <div id="slider-label">Year:</div>
             <div id="slider"></div>
@@ -272,6 +276,8 @@
           <button id="answer" class="hidden">Continue</button>
           <button id="continue" class="hidden">Continue</button>
           <button id="cancel" class="hidden" disabled>Finish and claim current reward</button>
+        </div>
+        <div id="all-charts-wrapper">
         </div>
       </div>
       <div id="step-4" class="step">

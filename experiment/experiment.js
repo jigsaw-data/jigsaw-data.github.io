@@ -11,6 +11,7 @@
   }
 
   // Dataset for instructional example
+  // {{{
   var instructionalData = [[{"x":0,"y":63},{"x":1,"y":13},{"x":2,"y":23},{"x":3,"y":83},{"x":4,"y":54}],[{"x":0,"y":46},{"x":1,"y":45},{"x":2,"y":19},{"x":3,"y":60},{"x":4,"y":47}],[{"x":0,"y":48},{"x":1,"y":14},{"x":2,"y":28},{"x":3,"y":68},{"x":4,"y":33}],[{"x":0,"y":22},{"x":1,"y":70},{"x":2,"y":82},{"x":3,"y":68},{"x":4,"y":49}],[{"x":0,"y":86},{"x":1,"y":39},{"x":2,"y":25},{"x":3,"y":30},{"x":4,"y":20}],[{"x":0,"y":43},{"x":1,"y":24},{"x":2,"y":65},{"x":3,"y":6},{"x":4,"y":39}],[{"x":0,"y":94},{"x":1,"y":15},{"x":2,"y":32},{"x":3,"y":73},{"x":4,"y":51}],[{"x":0,"y":74},{"x":1,"y":23},{"x":2,"y":56},{"x":3,"y":54},{"x":4,"y":50}],[{"x":0,"y":16},{"x":1,"y":71},{"x":2,"y":67},{"x":3,"y":7},{"x":4,"y":48}],[{"x":0,"y":19},{"x":1,"y":10},{"x":2,"y":9},{"x":3,"y":78},{"x":4,"y":68}],[{"x":0,"y":39},{"x":1,"y":66},{"x":2,"y":90},{"x":3,"y":91},{"x":4,"y":50}],[{"x":0,"y":85},{"x":1,"y":82},{"x":2,"y":77},{"x":3,"y":13},{"x":4,"y":61}],[{"x":0,"y":13},{"x":1,"y":12},{"x":2,"y":21},{"x":3,"y":82},{"x":4,"y":57}],[{"x":0,"y":6},{"x":1,"y":26},{"x":2,"y":89},{"x":3,"y":10},{"x":4,"y":12}],[{"x":0,"y":58},{"x":1,"y":44},{"x":2,"y":83},{"x":3,"y":48},{"x":4,"y":14}]];
 
   // Answers for training tasks
@@ -18,6 +19,8 @@
     ['<svg width="102" height="102"><g transform="translate(1,1)"><rect width="100" height="100" fill="white" stroke="black"></rect></g><g transform="translate(1,1)"><path id="input" fill-opacity="0" stroke="black" d="M0,31L7.142857142857142,15L14.285714285714285,26L21.428571428571427,37L28.57142857142857,58L35.714285714285715,42.00000000000001L42.857142857142854,53L50,47L57.14285714285714,63L64.28571428571429,79L71.42857142857143,74L78.57142857142857,69L85.71428571428571,85L92.85714285714286,90L100,95L107.14285714285714,NaNL114.28571428571428,NaNL121.42857142857142,NaNL128.57142857142858,NaNL135.71428571428572,NaNL142.85714285714286,NaNL150,NaNL157.14285714285714,NaNL164.28571428571428,NaNL171.42857142857142,NaNL178.57142857142858,NaNL185.71428571428572,NaNL192.85714285714286,NaNL200,NaNL207.14285714285717,NaNL214.28571428571428,NaNL221.42857142857144,NaNL228.57142857142856,NaNL235.71428571428572,NaNL242.85714285714283,NaNL250,NaNL257.14285714285717,NaNL264.2857142857143,NaNL271.42857142857144,NaNL278.57142857142856,NaNL285.7142857142857,NaNL292.85714285714283,NaNL300,NaNL307.14285714285717,NaNL314.2857142857143,NaNL321.42857142857144,NaNL328.57142857142856,NaNL335.7142857142857,NaNL342.85714285714283,NaNL350,NaNL357.14285714285717,NaNL364.2857142857143,NaNL371.42857142857144,NaNL378.57142857142856,NaNL385.7142857142857,NaNL392.85714285714283,NaNL400,NaNL407.1428571428571,NaNL414.28571428571433,NaNL421.42857142857144,NaNL428.57142857142856,NaNL435.71428571428567,NaNL442.8571428571429,NaNL450,NaNL457.1428571428571,NaNL464.28571428571433,NaNL471.42857142857144,NaNL478.57142857142856,NaNL485.71428571428567,NaNL492.8571428571429,NaNL500,NaNL507.1428571428571,NaNL514.2857142857143,NaNL521.4285714285714,NaNL528.5714285714286,NaNL535.7142857142857,NaNL542.8571428571429,NaNL550,NaNL557.1428571428571,NaNL564.2857142857143,NaNL571.4285714285714,NaNL578.5714285714286,NaNL585.7142857142857,NaNL592.8571428571429,NaNL600,NaNL607.1428571428571,NaNL614.2857142857143,NaNL621.4285714285714,NaNL628.5714285714286,NaNL635.7142857142857,NaNL642.8571428571429,NaNL650,NaNL657.1428571428571,NaNL664.2857142857143,NaNL671.4285714285714,NaNL678.5714285714286,NaNL685.7142857142857,NaNL692.8571428571429,NaNL700,NaNL707.1428571428571,NaN"></path></g></svg>'],
     ['2002']
   ];
+
+  // }}}
 
   var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
 
@@ -56,6 +59,7 @@
     // INPUT: 1, // TODO
     RENDER: 2,
     SERIAL: 3,
+    STICKY: 4, //TODO
   };
 
   var blocking;
@@ -70,6 +74,7 @@
   var CorrespondenceModes = {
     NONE: 0,
     LABEL: 1,
+    SHOWALL: 2,
   };
 
   var correspondence;
@@ -77,10 +82,13 @@
   var TaskModes = {
     TREND: 0,
     EXTREMA: 1,
+    THRESHOLD: 2,
   };
 
   var taskMode;
 
+  // data
+  // {{{
   var TrendModesLong = {
     INCREASING:  [ 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61, 65, 85, 73, 77, 69  ] ,
     INCREASING_15:  [ 5, 9, 13, 17, 21, 25, 41, 33, 37, 29, 61, 49, 53, 57, 45, 65, 85, 73, 77, 69  ] ,
@@ -112,6 +120,8 @@
     FLAT_15:  [ 43, 35, 56, 45, 46, 35, 40, 48, 44, 44, 54, 40, 45, 50, 45  ] ,
     FLAT_30: [ 67, 45, 43, 78, 7, 49, 12, 71, 39, 22, 55, 17, 17, 84, 78  ], // actually 50 but for naming convenience
   }
+
+  // }}}
 
   var TrendModes = TrendModesShort;
   var trends;
@@ -405,6 +415,123 @@
     return frames;
   }
 
+
+  function drawInplace(data, idx) {
+    // get rid of old one
+    d3.select(".month_chart").selectAll("*").remove();
+    var month_svg = d3.select(".month_chart");
+    drawChart(data, idx, month_svg, true);
+  }
+
+  function drawAppend(data, idx) {
+    // should only draw if new
+    // check state for what has been render
+    function pred(e) {
+      if ((e.event === 'render') && (e.dataIdx === idx)) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    var rendered = state.eventLog.filter(pred);
+    if (rendered.length > 0) {
+      // high light the results briefly
+      $('#month-chart-'+idx).addClass('highlight');
+      setTimeout(function(){
+        $('#month-chart-'+idx).removeClass('highlight');
+      }, 500);
+    } else {
+      // create a new div and pass to create
+      var month_svg = d3.select('#all-charts-wrapper').append('svg');
+      month_svg.attr('id', 'month-chart-'+idx)
+               .attr('class', 'temp-chart')
+               .attr('width', 200)
+               .attr('height', 150);
+      drawChart(data, idx, month_svg, false);
+    }
+  }
+
+  function drawChart(data, idx, month_svg, showAxisLabel) {
+
+    var month_counts = [];
+    for (var i = 0; i < months.length; i++) {
+      month_counts.push({
+        name: months[i],
+        count: data[idx][i].y
+      });
+    }
+
+    var margin = {top: 20, right: 30, bottom: 50, left: 70},
+        month_width = month_svg.attr("width") - margin.left - margin.right,
+        month_height = month_svg.attr("height") - margin.top - margin.bottom;
+
+    var x_month = d3.scaleBand()
+                    .domain(months)
+                    .rangeRound([0, month_width])
+                    .padding(0.1);
+
+    var y_month = d3.scaleLinear()
+                    .domain([0, 100])
+                    .rangeRound([month_height, 0]);
+
+    var g_month = month_svg.append("g")
+                           .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    g_month.append("g")
+           .attr("class", "axis axis--x")
+           .attr("transform", "translate(0," + month_height + ")")
+           .call(d3.axisBottom(x_month));
+
+    month_svg.append("text")
+             .attr("y", margin.top - 10)
+             .attr("x", (month_width + margin.left + margin.right) / 2)
+             .attr("text-anchor", "middle")
+             .text(idx+yearStart);
+    if (showAxisLabel) {
+      month_svg.append("text")
+               .attr("y", month_height + margin.top + margin.bottom - 14)
+               .attr("x", (month_width + margin.left + margin.right) / 2)
+               .attr("text-anchor", "middle")
+               .text("Month");
+
+      month_svg.append("text")
+               .attr("transform", "rotate(-90)")
+               .attr("y", 35)
+               .attr("text-anchor", "middle")
+               .attr("x", -(month_height + 40) / 2)
+               .text("Number of users");
+    }
+    g_month.append("g")
+           .attr("class", "axis axis--y")
+           .call(d3.axisLeft(y_month));
+
+    var bar = g_month.append("g")
+                     .attr("class", "bar")
+                     .selectAll("rect")
+                     .data(month_counts)
+                     .enter()
+                     .append("rect")
+                     .attr("class", function(d, i) { return i === maxIdx ? 'bar highlight' : 'bar'; })
+                     .attr("x", function(d) {return x_month(d.name); })
+                     .attr("y", function(d) {return y_month(d.count); })
+                     .attr("width", x_month.bandwidth())
+                     .attr("height", function(d) {
+                       return month_height - y_month(d.count); });
+
+    if (indicator === IndicatorModes.SPINNER && id !== 0) {
+        if (blocking === BlockingModes.RENDER) {
+          d3.select('.month-chart-wrapper').attr('class', 'month-chart-wrapper');
+        } else if (blocking === BlockingModes.INPUT || blocking === BlockingModes.SERIAL || blocking === BlockingModes.NONE) {
+          var requests = state.eventLog.filter(function(e) { return e.event === 'slide'; }).length;
+          var rendered = state.eventLog.filter(function(e) { return e.event === 'render'; }).length;
+          if (requests === rendered) {
+            d3.select('.month-chart-wrapper').attr('class', 'month-chart-wrapper');
+          }
+        }
+      }
+
+  }
+
   function renderDataSelection(data, idx, delay) {
     var tid = null;
     var id = ++state.eventId;
@@ -464,86 +591,16 @@
         $('#slider').slider('enable');
       }
 
-      d3.select(".month_chart").selectAll("*").remove();
-
-      var month_counts = [];
-      for (var i = 0; i < months.length; i++) {
-        month_counts.push({
-          name: months[i],
-          count: data[idx][i].y
-        });
-      }
-
       // label
       if (correspondence === CorrespondenceModes.LABEL) {
         var year = yearStart + idx;
         d3.select("#current-month").text('Showing: '+ year);
       }
 
-      var selected_months = [];
-
-      var month_svg = d3.select(".month_chart"),
-          margin = {top: 20, right: 30, bottom: 50, left: 70},
-          month_width = month_svg.attr("width") - margin.left - margin.right,
-          month_height = month_svg.attr("height") - margin.top - margin.bottom;
-
-      var x_month = d3.scaleBand()
-                      .domain(months)
-                      .rangeRound([0, month_width])
-                      .padding(0.1);
-
-      var y_month = d3.scaleLinear()
-                      .domain([0, 100])
-                      .rangeRound([month_height, 0]);
-
-      var g_month = month_svg.append("g")
-                             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-      g_month.append("g")
-             .attr("class", "axis axis--x")
-             .attr("transform", "translate(0," + month_height + ")")
-             .call(d3.axisBottom(x_month));
-
-      month_svg.append("text")
-               .attr("y", month_height + margin.top + margin.bottom - 14)
-               .attr("x", (month_width + margin.left + margin.right) / 2)
-               .attr("text-anchor", "middle")
-               .text("Month");
-
-      month_svg.append("text")
-               .attr("transform", "rotate(-90)")
-               .attr("y", 35)
-               .attr("text-anchor", "middle")
-               .attr("x", -(month_height + 40) / 2)
-               .text("Number of users");
-
-      g_month.append("g")
-             .attr("class", "axis axis--y")
-             .call(d3.axisLeft(y_month));
-
-      var bar = g_month.append("g")
-                       .attr("class", "bar")
-                       .selectAll("rect")
-                       .data(month_counts)
-                       .enter()
-                       .append("rect")
-                       .attr("class", function(d, i) { return i === maxIdx ? 'bar highlight' : 'bar'; })
-                       .attr("x", function(d) {return x_month(d.name); })
-                       .attr("y", function(d) {return y_month(d.count); })
-                       .attr("width", x_month.bandwidth())
-                       .attr("height", function(d) { return month_height - y_month(d.count); });
-
-      if (indicator === IndicatorModes.SPINNER && id !== 0) {
-        if (blocking === BlockingModes.RENDER) {
-          d3.select('.month-chart-wrapper').attr('class', 'month-chart-wrapper');
-        } else if (blocking === BlockingModes.INPUT || blocking === BlockingModes.SERIAL || blocking === BlockingModes.NONE) {
-          var requests = state.eventLog.filter(function(e) { return e.event === 'slide'; }).length;
-          var rendered = state.eventLog.filter(function(e) { return e.event === 'render'; }).length;
-          if (requests === rendered) {
-            d3.select('.month-chart-wrapper').attr('class', 'month-chart-wrapper');
-          }
-        }
+      if (correspondence === CorrespondenceModes.SHOWALL) {
+        drawAppend(data, idx);
       }
+      drawInplace(data, idx);
 
       state.eventLog.push({event: 'render', id: id, dataIdx: idx, ts: Date.now()});
     }
@@ -592,6 +649,8 @@
     });
 
     renderDataSelection(data, val, DelayModes.NONE);
+    // hack
+    d3.select("#all-charts-wrapper").selectAll("*").remove();
   }
 
   function showTrend(trendIdx) {
@@ -710,6 +769,8 @@
       return;
     } else {
       $('#step-123').addClass('current');
+      // get rid of the cumulated view
+      d3.select("#all-charts-wrapper").selectAll("*").remove();
       if (state.showingInstructions) {
         $('#step-' + state.step + '-instructions').addClass('current');
         $('.task-wrapper').addClass('hidden');
@@ -739,7 +800,7 @@
         $('#submit').addClass('hidden');
         $('#continue').removeClass('hidden');
         $('#correct').removeClass('hidden');
-        $('#correct').html('correct answer was:<br>' + trainAnswers[taskMode][state.trainTaskNum]);
+        $('#correct').html('Correct answer: ' + trainAnswers[taskMode][state.trainTaskNum]);
       } else {
         $('#submit').removeClass('hidden');
         $('#correct').addClass('hidden');
