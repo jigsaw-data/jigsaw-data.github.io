@@ -42,6 +42,8 @@
   var DelayModes = {
     NONE: -1,
     CONSTANT: function() { return 500; },
+    CONSTANT_5s: function() { return 5000; },
+    CONSTANT_10s: function() { return 10000; },
     // UNIFORM: function() { return getRandomInt(200, 500); },
     // PARETO: function() { return 500; }, // TODO
     BIMODAL: function() { return bimodal(200, 500, 100); },
@@ -53,7 +55,7 @@
     NONE: 0,
     // INPUT: 1, // TODO
     RENDER: 2,
-    // SERIAL: 3,
+    SERIAL: 3,
   };
 
   var blocking;
@@ -124,6 +126,7 @@
   var yearStart = 2001;
   var maxIdx = 2;
   var numBars = 5;
+  var ixns = {};
 
   var debug = true;
   if (!debug) {
@@ -364,6 +367,7 @@
     } else {
       state.step = Modes.TRAIN;
       state.trainTaskNum += 1;
+      state.eventId = -1;
       state.taskData = generateData();
       state.showingInstructions = (state.trainTaskNum === 0);
       state.input = '';
@@ -402,6 +406,7 @@
   }
 
   function renderDataSelection(data, idx, delay) {
+    var tid = null;
     var id = ++state.eventId;
     if (id !== 0) {
       state.eventLog.push({event: 'slide', id: id, dataIdx: idx, ts: Date.now()});
@@ -410,19 +415,25 @@
       }
     }
 
-    function checkSerial(id) {
+    function checkSerial(id, idx) {
+      var persist = 2000;
       // only render if its the most immediate
       // check eventLog
       var rendered = state.eventLog.filter(function(e) { return e.event === 'render'; });
       var received = state.eventLog.filter(function(e) { return e.event === 'received'; });
       var lastRendered = rendered.slice(-1).pop();
+
       if (id === lastRendered.id + 1) {
+        var timeDiff = Date.now() - lastRendered.ts
+        if ( timeDiff < persist) {
+          // cannot render, schedule for later
+          setTimeout(function(){render(id, idx)}, persist - timeDiff);
+          return false;
+        }
         // check last received
         var receivedNext = received.filter(function(e) { return e.id === id + 1 });
         if (receivedNext[0]) {
-          console.log('Next received is', receivedNext);
-          console.log('render next one as well', id);
-          setTimeout(function(){render(receivedNext[0].id, receivedNext[0].dataIdx)}, 300);
+          setTimeout(function(){render(receivedNext[0].id, receivedNext[0].dataIdx)}, persist);
         }
         return true;
       }
@@ -430,6 +441,7 @@
     }
 
     function render(id, idx) {
+      delete ixns[tid];
       if (blocking === BlockingModes.RENDER && id !== 0 && state.eventId !== id) {
         state.eventLog.push({event: 'blockedRender', id: id, dataIdx: idx, ts: Date.now()});
         return;
@@ -440,11 +452,11 @@
         console.log('in serial checking', id, yearStart + idx);
         state.eventLog.push({event: 'received', id: id, dataIdx: idx, ts: Date.now()});
 
-        if (!checkSerial(id)) {
+        if (!checkSerial(id, idx)) {
           console.log('not serial', id, yearStart + idx);
           return;
         } else {
-          console.log('rendering', id, yearStart + idx);
+          console.log('rendering', id, yearStart + idx, '@', parseInt(Date.now()/1000) % 1000);
         }
       }
 
@@ -537,16 +549,32 @@
     }
 
     if (delay !== DelayModes.NONE) {
-      setTimeout(function(){render(id, idx)}, delay());
+      tid = setTimeout(function(){render(id, idx)}, delay());
+      ixns[tid] = true;
     } else {
       render(id, idx);
     }
+  }
+
+  // Cleans up viz by removing any outstanding interaction requests
+  function clearIxns() {
+    for (var tid of Object.keys(ixns)) {
+      clearTimeout(tid);
+      delete ixns[tid];
+    }
+    // remove spinner
+    if (indicator === IndicatorModes.SPINNER) {
+      d3.select('.month-chart-wrapper').attr('class', 'month-chart-wrapper');
+    }
+    state.eventId = -1;
   }
 
   // Updates the viz shown to the worker with random data
   // step is the mode of the experiment e.g. qualification or normal task
   // the delay functions determine the latency of a brushing action
   function updateViz(data, step, delay) {
+    clearIxns();
+
     var val = 0;
     $('#slider-value').text(yearStart + val);
     $('#slider').slider({
@@ -911,6 +939,7 @@
   function showAnswerInput() {
     state.acceptingAnswer = true;
     state.answerStartTime = Date.now();
+    clearIxns();
     updateView();
   }
 
