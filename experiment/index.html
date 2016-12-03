@@ -5,6 +5,41 @@
 
     <link href="jquery-ui.css" rel="stylesheet">
     <style type="text/css">
+
+      h1 {
+        font-family:arial;
+        font-size:2em;
+        color:#333;
+      }
+      .alignright {
+        float: right;
+        width: 50%;
+      }
+      .alignleft {
+        float: left;
+        width: 50%;
+      }
+      #state-info {
+        display: block;
+        height: 50px;
+      }
+      .states {
+        fill: #e5e5e5;
+        stroke: #fff;
+        stroke-width:2px;
+      }
+      .states:hover {
+        fill: steelblue;
+      }
+      .hide {
+        fill: white;
+      }
+
+      button {
+        position:relative;
+        font-size: 16px;
+      }
+
       html {
         font-family: sans-serif;
         background: white;
@@ -146,6 +181,11 @@
         margin-bottom: 0;
       }
 
+      #viz {
+        display: block;
+        height: 300px;
+      }
+
       textarea {
         width: 400px;
         height: 100px;
@@ -155,6 +195,8 @@
     <script src="jquery.min.js"></script>
     <script src="jquery-ui.min.js"></script>
     <script src="d3.v4.min.js"></script>
+    <script src="topojson.v1.min.js"></script>
+    <script src="d3-geo.v1.min.js"></script>
     <script src="seedrandom.min.js"></script>
     <script src="api.js"></script>
     <script src="experiment.js"></script>
@@ -165,10 +207,12 @@
       <select id="delay-config" name="delay-config">
         <option value="NONE" selected>NONE</option>
         <option value="CONSTANT">CONSTANT (500ms)</option>
-        <option value="CONSTANT_5s">CONSTANT (5 s)</option>
-        <option value="CONSTANT_10s">CONSTANT (10 s)</option>
-        <!-- <option value="UNIFORM">UNIFORM (200-500ms)</option> -->
-        <option value="BIMODAL">BIMODAL (200 low, 500 high, 100 variance)</option>
+        <option value="CONSTANT_5">CONSTANT (5 s)</option>
+        <option value="CONSTANT_10">CONSTANT (10 s)</option>
+        <option value="UNIFORM_500">UNIFORM 500ms</option>
+        <option value="UNIFORM_1">UNIFORM 1 s</option>
+        <option value="UNIFORM_5">UNIFORM 5 s</option>
+        <option value="UNIFORM_10">UNIFORM 10 s</option>
       </select>
       <label for="blocking-config">Blocking policy:</label>
       <select id="blocking-config" name="blocking-config">
@@ -176,6 +220,7 @@
         <option value="RENDER">RENDER</option>
         <!-- <option value="INPUT">INPUT</option> -->
          <option value="SERIAL">SERIAL</option>
+         <option value="STICKY">STICKY</option>
       </select>
       <label for="indicator-config">Indicator:</label>
       <select id="indicator-config" name="indicator-config">
@@ -191,8 +236,18 @@
       <label for="task-config">Task type:</label>
       <select id="task-config" name="task-config">
         <option value="THRESHOLD" selected>THRESHOLD</option>
-        <option value="EXTREMA" selected>EXTREMA</option>
+        <option value="EXTREMA">EXTREMA</option>
         <option value="TREND">TREND</option>
+      </select>
+      <label for="data-config">Data Gen:</label>
+      <select id="data-config" name="data-config">
+        <option value="CANNED" selected>CANNED</option>
+        <option value="RANDOM">RANDOM</option>
+      </select>
+      <label for="widget-config">Widget:</label>
+      <select id="widget-config" name="widget-config">
+        <option value="SLIDER">SLIDER</option>
+        <option value="MAP" selected>MAP</option>
       </select>
     </div>
     <div class="content-wrapper">
@@ -212,11 +267,11 @@
           <p>In these tasks you will be asked to read data by interacting with a data visualization like the one shown below. You can drag the time slider below the bar chart, which will filter the data by the year selected. The corresponding bar chart will update accordingly. Using this interactive visualization, you will try to answer an associated question given in the tasks.</p>
           <p>Spend some time familiarizing yourself with the visualization below. The data shown here will be different from those shown in the tasks, however the visualization will remain the same. Make sure you understand how to read the data, and interact with the slider before proceeding.</p>
           <!-- <p>When you are ready, you can click the "Continue" button below which will remove the visualization and allow you to insert your answer for the task. After selecting your answer, you may press the "Submit task" button to submit the current task. When you submit an answer, the next task will automatically load. Once all the tasks have been completed, you will have completed the HIT and receive a bonus payment.</p> -->
-          <p>When you are ready, you can click the "Next" button below to start working on a training task before completing the rest of the tasks. In the training task, you will be shown the correct answer after submitting.</p>
+          <p>When you are ready, you can click the "Next" button below to interact with another visualization where we introduce loading delay.</p>
         </div>
         <div id="step-3-instructions" class="step">
           <h4>Instructions</h4>
-          <p>The rest of the tasks for this experiment are similar to the training task you just completed, except you will not be shown the correct answer after submission.</p>
+          <p>The rest of the tasks for this experiment are similar to the training tasks you just completed, except you will not be shown the correct answer after submission. In addition, the dataset and loading delay will change randomly between each task. This is done intentionally, we want to see how your performance changes in the face of different delays.</p>
           <p>When you are ready, you can click the "Next" button below to start working on the rest of the tasks.</p>
         </div>
         <!-- <h4>Instructions</h4> -->
@@ -235,31 +290,22 @@
           <p id="question"></p>
         </div>
         <div id="viz">
-          <div class="month-label">
-            <h4 id="current-month"></h4>
+          <div id="results-wrapper" class="alignright">
+            <div class="month-label">
+              <h4 id="current-month"></h4>
+            </div>
+            <div class="month-chart-wrapper">
+              <svg width="400" height="300" class="month_chart"></svg>
+            </div>
+            <div id="slider-wrapper" class="hidden">
+              <div id="slider-label">Year:</div>
+              <div id="slider"></div>
+              <div id="slider-value"></div>
+            </div>
           </div>
-          <div class="month-chart-wrapper">
-            <svg width="400" height="300" class="month_chart"></svg>
+          <div id="map-wrapper" class="alignleft hidden">
+            <div id="state-info"><p id="state-name"></p></div>
           </div>
-          <div id="slider-wrapper">
-            <div id="slider-label">Year:</div>
-            <div id="slider"></div>
-            <div id="slider-value"></div>
-          </div>
-          <table class="data-table" style="display: none">
-            <tr>
-              <td>Customers</td>
-              <td id="customers"></td>
-            </tr>
-            <tr>
-              <td>Time Spent</td>
-              <td id="time"></td>
-            </tr>
-            <tr>
-              <td>Amount Spent</td>
-              <td id="amount"></td>
-            </tr>
-          </table>
         </div>
         <div id="question-wrapper" class="hidden">
           <div id="input"></div>
@@ -277,6 +323,8 @@
           <button id="continue" class="hidden">Continue</button>
           <button id="cancel" class="hidden" disabled>Finish and claim current reward</button>
         </div>
+        <br>
+        <br>
         <div id="all-charts-wrapper">
         </div>
       </div>

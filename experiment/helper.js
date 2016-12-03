@@ -79,4 +79,42 @@ function main_nums() {
   console.log('FLAT_30: ', generate_numbers('FLAT', count, min, max, 0.5), ',');
 }
 
-main_nums();
+//main_nums();
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// some hard coding
+function generateRandom(years, thresholdValue) {
+
+  var controlledNums = Array.apply(null, Array(years)).map(Number.prototype.valueOf,0);
+  var extremaPos = getRandomInt(1, years - 1);
+  var maxVal;
+  // equal likelihood to cross threshold
+  if (Math.random() < 0.5) {
+    // cross threshold
+    maxVal = getRandomInt(thresholdValue + 5, thresholdValue + 10);
+  } else {
+    // dont cross threshold
+    maxVal = getRandomInt(50, thresholdValue - 5);
+  }
+  controlledNums[extremaPos] = maxVal;
+  // now generate everything that's 10 below max val
+  for (var i = 0; i < years; i ++) {
+    if (i != extremaPos) {
+      controlledNums[i] = getRandomInt(5, maxVal - 10);
+    }
+  }
+  return controlledNums;
+}
+
+r = [];
+for (var i = 0; i < 9; i++) {
+  r.push(generateRandom(17, 80));
+}
+
+console.log(r);
+
+
+
