@@ -114,7 +114,13 @@ for (var i = 0; i < 9; i++) {
   r.push(generateRandom(17, 80));
 }
 
-console.log(r);
 
+function smooth(count, min, max) {
+  var result = [];
+  for (var i = 0; i < count; i++) {
+    result.push(parseInt(i * (max-min)/count + min));
+  }
+  return result;
+}
 
-
+console.log(smooth(17, 5,90))

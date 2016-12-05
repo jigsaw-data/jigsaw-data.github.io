@@ -94,16 +94,6 @@
     // BIMODAL: function() { return bimodal(200, 500, 100); },
   }
 
-  var allData = [ [ 45, 20, 25, 29, 20, 46, 7, 14, 26, 27, 5, 25, 35, 57, 27, 23, 41  ],
-                  [ 9, 12, 59, 39, 17, 39, 48, 18, 36, 48, 44, 49, 34, 46, 20, 33, 9  ],
-                  [ 5, 27, 40, 37, 30, 32, 23, 16, 31, 31, 11, 39, 43, 34, 12, 12, 57  ],
-                  [ 67, 21, 13, 66, 49, 52, 59, 71, 54, 53, 7, 12, 42, 9, 86, 49, 56  ],
-                  [ 44, 9, 26, 51, 18, 18, 17, 47, 37, 63, 29, 41, 5, 36, 10, 29, 8  ],
-                  [ 12, 71, 25, 54, 71, 31, 11, 86, 32, 25, 38, 27, 70, 17, 31, 43, 36  ],
-                  [ 18, 60, 47, 21, 14, 27, 34, 47, 14, 73, 41, 45, 86, 7, 48, 31, 76  ],
-                  [ 14, 16, 23, 35, 76, 27, 22, 90, 61, 37, 50, 27, 74, 73, 39, 27, 11  ],
-                  [ 27, 63, 26, 28, 72, 47, 61, 61, 55, 86, 10, 19, 18, 20, 32, 15, 37  ] ];
-
   var DelayModesData = {
     NONE: [ 45, 20, 25, 29, 20, 46, 7, 14, 26, 27, 5, 25, 35, 57, 27, 23, 41  ],
     CONSTANT: [ 9, 12, 59, 39, 17, 39, 48, 18, 36, 48, 44, 49, 34, 46, 20, 33, 9  ],
@@ -117,9 +107,9 @@
   };
 
   var InstructionDelayModesData = {
-    NONE: [ 45, 50, 19, 8, 21, 57, 9, 6, 49, 37, 43, 16, 50, 70, 24, 54, 22  ],
-    CONSTANT: [ 45, 50, 19, 8, 21, 57, 9, 6, 49, 37, 43, 16, 50, 70, 24, 54, 22  ],
-    UNIFORM_3: [ 45, 50, 19, 8, 21, 57, 9, 6, 49, 37, 43, 16, 50, 70, 24, 54, 22  ]
+    NONE: [ 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85 ],
+    CONSTANT: [ 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85 ],
+    UNIFORM_3: [ 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85 ]
   };
 
   var TrainingDelayModesData = {
@@ -143,7 +133,7 @@
   var trainingTrendAnswers;
 
   var years = DelayModesData.NONE.length;
-  var yearStart = 2001;
+  var yearStart = 1999;
   var trackIdx = 2;
   var numBars = 5;
   var ixns = {};
@@ -169,7 +159,7 @@
       correspondence = CorrespondenceModes.NONE;
       taskMode = TaskModes.THRESHOLD;
       dataMode = DataModes.CANNED;
-      widgetMode = WidgetModes.MAP;
+      widgetMode = WidgetModes.SLIDER;
     } else {
       var combos = [];
       for (var w of Object.keys(WidgetModes)) {
@@ -200,6 +190,7 @@
       correspondence = CorrespondenceModes[combos[idx].correspondence];
       taskMode = TaskModes[combos[idx].taskMode];
       dataMode = DataModes[combos[idx].dataMode];
+      widgetMode = WidgetModes[combos[idx].widgetMode];
       console.log(idx);
       console.log(combos[idx]);
       gpaas.logData({
@@ -294,7 +285,8 @@
         testFactor: 0,
         usersDelayIdx: 0,
         totalsDelayIdx: 0
-      }
+      },
+      currentMapPos: 'AZ',
     };
   }
 
@@ -749,15 +741,18 @@
       d3.select('.month-chart-wrapper').attr('class', 'month-chart-wrapper');
     }
     state.eventId = -1;
+
   }
 
   function drawMap(data) {
     // code taken from http://bl.ocks.org/mapsam/6083585
     if ($('#map-widget').length) {
       // might need some reset logic in the future
-      return;
+      d3.select("#map-widget").remove();
     }
+    $('#state-name').html('AZ');
 
+    state.currentMapPos = 'AZ';
     var width = 260,
         height = 200;
 
@@ -788,15 +783,20 @@
                 // trigger request
                 var yearIdx = statesIndex.indexOf(name);
                 renderDataSelection(data, yearIdx, expDelay);
-                return document.getElementById('state-name').innerHTML=name;
+                // persist the coloring and clear out the previous coloring
+                d3.select('#'+ state.currentMapPos).classed('states-selected', false);
+                d3.select('#'+name).classed('states-selected', true);
+                state.currentMapPos = name;
+                return $('#state-name').html(name);
               }
             })
-            .on('mouseout', function(d) {
-              return document.getElementById('state-name').innerHTML='';
-            });
+            //.on('mouseout', function(d) {
+            //  return $('#state-name').html('&nbsp');
+            //});
       // remove MN from states to avoid hover issue
       d3.select('#MN').classed("states", false);
       d3.select('#MN').classed("hide", true);
+      d3.select('#AZ').classed('states-selected', true);
     });
   }
 
@@ -971,12 +971,13 @@
     if (widgetMode === WidgetModes.SLIDER) {
       $('#slider').slider('option', 'disabled', true);
     } else {
-      $('#map-widget').on('mouseover', null);
+      d3.selectAll('.states').on('mouseover', null);
     }
   }
   // Updates the UI view given a new state
   function updateView() {
     console.log(state);
+
     $('.step').removeClass('current');
     if (state.step === Modes.START) {
       $('#step-0').addClass('current');
@@ -1285,10 +1286,11 @@
         $('#step-2-instructions h4').text('Instructions Part 3');
         $('#step-2-instructions').append(
           '<p>Now we have increased the loading delay even more compared ' +
-          'to the previous graph you saw. The data being shown here is exactly the ' +
-          'same as in the previous graph. Spend some time interacting with the ' +
-          'visualization below to familiarize yourself with how the delay affects ' +
-          'the graph.</p>'
+          'to the previous graph you saw, and the bars of the graph might not ' +
+          'update in the order that you drag the slider. The data being shown ' +
+          'here is exactly the same as in the previous graph. Spend some time ' +
+          'interacting with the visualization below to familiarize yourself with ' +
+          'how the delay affects the graph.</p>'
         );
         $('#step-2-instructions').append(
           '<p>When you are ready, you can click the "Next" button below to ' +

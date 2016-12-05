@@ -11,33 +11,16 @@
         font-size:2em;
         color:#333;
       }
-      .alignright {
-        float: right;
-        width: 50%;
-      }
-      .alignleft {
-        float: left;
-        width: 50%;
-      }
-      #state-info {
-        display: block;
-        height: 50px;
-      }
       .states {
         fill: #e5e5e5;
         stroke: #fff;
         stroke-width:2px;
       }
-      .states:hover {
+      .states-selected {
         fill: steelblue;
       }
       .hide {
         fill: white;
-      }
-
-      button {
-        position:relative;
-        font-size: 16px;
       }
 
       html {
@@ -111,8 +94,14 @@
         padding: 5px 10px;
       }
 
-      .users-chart-wrapper, .month-chart-wrapper {
+      .users-chart-wrapper, .month-chart-wrapper,
+      #map-wrapper, #results-wrapper {
         display: inline-block;
+        vertical-align: top;
+      }
+
+      #state-info {
+        display: block;
       }
 
       .spinner {
@@ -181,11 +170,6 @@
         margin-bottom: 0;
       }
 
-      #viz {
-        display: block;
-        height: 300px;
-      }
-
       textarea {
         width: 400px;
         height: 100px;
@@ -237,7 +221,6 @@
       <select id="task-config" name="task-config">
         <option value="THRESHOLD" selected>THRESHOLD</option>
         <option value="EXTREMA">EXTREMA</option>
-        <option value="TREND">TREND</option>
       </select>
       <label for="data-config">Data Gen:</label>
       <select id="data-config" name="data-config">
@@ -246,8 +229,8 @@
       </select>
       <label for="widget-config">Widget:</label>
       <select id="widget-config" name="widget-config">
-        <option value="SLIDER">SLIDER</option>
-        <option value="MAP" selected>MAP</option>
+        <option value="SLIDER" selected>SLIDER</option>
+        <option value="MAP">MAP</option>
       </select>
     </div>
     <div class="content-wrapper">
@@ -290,7 +273,10 @@
           <p id="question"></p>
         </div>
         <div id="viz">
-          <div id="results-wrapper" class="alignright">
+          <div id="map-wrapper" class="hidden">
+            <div id="state-info"><p id="state-name">&nbsp</p></div>
+          </div>
+          <div id="results-wrapper">
             <div class="month-label">
               <h4 id="current-month"></h4>
             </div>
@@ -302,9 +288,6 @@
               <div id="slider"></div>
               <div id="slider-value"></div>
             </div>
-          </div>
-          <div id="map-wrapper" class="alignleft hidden">
-            <div id="state-info"><p id="state-name"></p></div>
           </div>
         </div>
         <div id="question-wrapper" class="hidden">
