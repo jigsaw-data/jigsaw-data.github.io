@@ -76,6 +76,7 @@
   var WidgetModes = {
     SLIDER: 0,
     MAP: 1,
+    INPLACEMAP: 2, // currently only compability with extrema task and no spinner or label are needed
   };
 
 
@@ -159,7 +160,7 @@
       correspondence = CorrespondenceModes.NONE;
       taskMode = TaskModes.THRESHOLD;
       dataMode = DataModes.CANNED;
-      widgetMode = WidgetModes.SLIDER;
+      widgetMode = WidgetModes.INPLACEMAP;
     } else {
       var combos = [];
       for (var w of Object.keys(WidgetModes)) {
@@ -483,6 +484,19 @@
   }
 
 
+  function drawInMap(data, idx) {
+    // color the selected region
+    var name = statesIndex[idx];
+    var val = data[idx][trackIdx].y
+    // get rid of spinner
+    $('#'+name).removeClass('inplace-spinner');
+    //var cVal = parseInt(val * 2.55);
+    //var color = 'rgb('+ parseInt(cVal/2) + ',' + cVal +',' + cVal +')';
+    //$('#'+name).css("fill", color);
+
+    d3.select('#'+name+'-val').attr('visibility', 'visible');
+  }
+
   function drawInplace(data, idx) {
     // get rid of old one
     d3.select(".month_chart").selectAll("*").remove();
@@ -717,7 +731,11 @@
       if (correspondence === CorrespondenceModes.SHOWALL) {
         drawAppend(data, idx);
       }
-      drawInplace(data, idx);
+      if (widgetMode === WidgetModes.INPLACEMAP) {
+        drawInMap(data, idx);
+      } else {
+        drawInplace(data, idx);
+      }
 
       state.eventLog.push({event: 'render', id: id, dataIdx: idx, ts: Date.now()});
     }
@@ -770,8 +788,9 @@
 
     // need to have a mapping of states to years
     d3.json('us.json', function(error, us) {
+        var features = topojson.feature(us, us.objects.usStates).features;
         svg.selectAll('.states')
-            .data(topojson.feature(us, us.objects.usStates).features)
+            .data(features)
             .enter()
             .append('path')
             .attr('class', 'states')
@@ -782,22 +801,78 @@
               if (name != 'MN') {
                 // trigger request
                 var yearIdx = statesIndex.indexOf(name);
-                renderDataSelection(data, yearIdx, expDelay);
                 // persist the coloring and clear out the previous coloring
-                d3.select('#'+ state.currentMapPos).classed('states-selected', false);
-                d3.select('#'+name).classed('states-selected', true);
+                if (widgetMode === WidgetModes.INPLACEMAP) {
+                  if ($('#'+name+'-val').attr('visibility') === 'hidden') {
+                    $('#'+name).addClass('inplace-spinner');
+                  }
+                } else {
+                  d3.select('#'+ state.currentMapPos).classed('states-selected', false);
+                  d3.select('#'+name).classed('states-selected', true);
+                }
                 state.currentMapPos = name;
+                renderDataSelection(data, yearIdx, expDelay);
                 return $('#state-name').html(name);
               }
-            })
-            //.on('mouseout', function(d) {
-            //  return $('#state-name').html('&nbsp');
-            //});
+            });
+         svg.selectAll('text')
+                .data(features)
+                .enter()
+                .append("svg:text")
+                .attr('visibility', 'hidden')
+                .attr('id', function(d){
+                  return d.properties.STATE_ABBR + '-val';
+                    })
+								.attr("x", function(d) {
+                    if (path.centroid(d)[0]) {
+                      return path.centroid(d)[0] - 8;
+                    }})
+								.attr("y", function(d) {
+                    if (path.centroid(d)[1]) {
+                      if (d.properties.STATE_ABBR == 'TX') {
+                        // need to shift up
+                        return path.centroid(d)[1] - 17;
+                      }
+                      return path.centroid(d)[1];
+                    }})
+                .text(function(d) {
+                   var idx = statesIndex.indexOf(d.properties.STATE_ABBR);
+                    if (idx > -1) {
+                      var val = data[idx][trackIdx].y
+                      return val;
+                    } else {
+                      return '';
+                    }
+                })
+								.attr("dy", ".35em")
+
       // remove MN from states to avoid hover issue
       d3.select('#MN').classed("states", false);
       d3.select('#MN').classed("hide", true);
-      d3.select('#AZ').classed('states-selected', true);
+      if (widgetMode !== WidgetModes.INPLACEMAP) {
+        d3.select('#AZ').classed('states-selected', true);
+      }
     });
+
+      d3.json('us-state-centroids.json', function(error, centroids) {
+				svg.selectAll("text")
+						.data(centroids)
+						.enter()
+						.append("svg:text")
+						.text(function(d){
+               console.log()
+								return d.properties.name;
+						})
+						.attr("x", function(d){
+                console.log('cetroid', path.coordinates(d));
+								return path.coordinates(d)[0];
+						})
+						.attr("y", function(d){
+								return  path.coordinates(d)[1];
+						})
+						.attr("text-anchor","middle")
+						.attr('font-size','6pt');
+      });
   }
 
   // Updates the viz shown to the worker with random data
