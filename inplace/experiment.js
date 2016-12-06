@@ -898,26 +898,6 @@
         d3.select('#AZ').classed('states-selected', true);
       }
     });
-
-      d3.json('../experiment/us-state-centroids.json', function(error, centroids) {
-                svg.selectAll("text")
-                        .data(centroids)
-                        .enter()
-                        .append("svg:text")
-                        .text(function(d){
-               console.log()
-                                return d.properties.name;
-                        })
-                        .attr("x", function(d){
-                console.log('cetroid', path.coordinates(d));
-                                return path.coordinates(d)[0];
-                        })
-                        .attr("y", function(d){
-                                return  path.coordinates(d)[1];
-                        })
-                        .attr("text-anchor","middle")
-                        .attr('font-size','6pt');
-      });
   }
 
   // Updates the viz shown to the worker with random data
