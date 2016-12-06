@@ -819,7 +819,7 @@
         .projection(projection);
 
     // need to have a mapping of states to years
-    d3.json('us.json', function(error, us) {
+    d3.json('../experiment/us.json', function(error, us) {
         var features = topojson.feature(us, us.objects.usStates).features;
         svg.selectAll('.states')
             .data(features)
