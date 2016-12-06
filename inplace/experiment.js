@@ -899,7 +899,7 @@
       }
     });
 
-      d3.json('../experiments/us-state-centroids.json', function(error, centroids) {
+      d3.json('../experiment/us-state-centroids.json', function(error, centroids) {
                 svg.selectAll("text")
                         .data(centroids)
                         .enter()
