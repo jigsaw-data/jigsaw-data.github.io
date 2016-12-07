@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Interactive Visualization Experiment</title>
+
+    <link href="jquery-ui.css" rel="stylesheet">
+    <style type="text/css">
+
+      h1 {
+        font-family:arial;
+        font-size:2em;
+        color:#333;
+      }
+      .states {
+        fill: #e5e5e5;
+        stroke: #fff;
+        stroke-width:2px;
+      }
+      .states-selected {
+        fill: steelblue;
+      }
+      .hide {
+        fill: white;
+      }
+
+      html {
+        font-family: sans-serif;
+        background: white;
+      }
+
+      .content-wrapper {
+        width: 800px;
+        margin: 0 auto;
+        margin-bottom: 30px;
+      }
+
+      .reward-box {
+        font-size: 0.85em;
+        border: 1px solid #333;
+        display: inline-block;
+        padding: 6px;
+        color: #333;
+      }
+
+      .step, .hidden {
+        display: none;
+      }
+
+      .step.current {
+        display: initial;
+      }
+
+      .invalid {
+        color: red;
+      }
+
+      /* viz styles */
+
+      .bar {
+        fill: steelblue;
+      }
+
+      .bar.highlight {
+        fill: brown;
+      }
+
+      .active {
+        fill: brown;
+      }
+
+      .dot {
+        fill: steelblue;
+      }
+
+      .dot:hover {
+        fill: brown;
+      }
+
+      .highlight {
+        background: yellow;
+      }
+
+      svg {
+        font: 14px sans-serif;
+      }
+
+      table {
+        border-spacing: 0;
+        border-collapse: collapse;
+      }
+
+      td {
+        border: 1px solid black;
+        padding: 5px 10px;
+      }
+
+      .users-chart-wrapper, .month-chart-wrapper,
+      #map-wrapper, #results-wrapper {
+        display: inline-block;
+        vertical-align: top;
+      }
+      #buttons-wrapper {
+        display:inline-block;
+        margin-left: 100px;
+        margin-right: 30px;
+        border: 1px solid #ccc;
+        border-bottom: none;
+      }
+      .button-widgets {
+        list-style-type: none;
+        border-bottom: 1px #ccc solid;
+        padding: 5px 10px;
+        width: 50px;
+        font-size: 13px;
+        background: #f9f9f9;
+      }
+      .button-widgets.selected {
+        background: #e0e0e0;
+      }
+      #state-info {
+        display: block;
+      }
+
+      .spinner {
+        position: relative;
+      }
+
+      .inplace-spinner {
+        /*animation: pulse 0.5s infinite;*/
+        opacity: 0.5;
+      }
+
+      @keyframes pulse {
+        0% {
+          fill: white;
+        }
+        100% {
+          fill: gray;
+        }
+      }
+
+      .spinner:after {
+        content: '';
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        border: 4px solid #d5d5d5;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 15px;
+        height: 15px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      #slider-wrapper {
+        width: 380px;
+        margin-left: 20px;
+      }
+
+      #slider-wrapper #slider-label {
+        margin-right: 15px;
+        display: inline-block;
+      }
+
+      #slider-wrapper #slider {
+        width: 245px;
+        display: inline-block;
+      }
+
+      #slider-wrapper #slider-value {
+        margin-left: 15px;
+        display: inline-block;
+      }
+
+      .trend-input-wrapper {
+        width: 500px;
+      }
+
+      .trend-input {
+        display: inline-block;
+        margin-right: 10px;
+        padding: 4px;
+        cursor: pointer;
+      }
+
+      .trend-input.selected {
+        background: steelblue;
+      }
+
+      #input {
+        margin-top: 10px;
+        /*border-style: solid;*/
+      }
+
+      #current-month {
+        margin-bottom: 0;
+      }
+
+      textarea {
+        width: 400px;
+        height: 100px;
+      }
+    </style>
+
+    <script src="../experiment/jquery.min.js"></script>
+    <script src="../experiment/jquery-ui.min.js"></script>
+    <script src="../experiment/d3.v4.min.js"></script>
+    <script src="../experiment/topojson.v1.min.js"></script>
+    <script src="../experiment/d3-geo.v1.min.js"></script>
+    <script src="../experiment/seedrandom.min.js"></script>
+    <script src="../experiment/api.js"></script>
+    <script src="experiment.js"></script>
+  </head>
+  <body>
+    <div id="configs" class="hidden">
+      <!---<label for="delay-config">Delay:</label>
+      <select id="delay-config" name="delay-config">
+        <option value="NONE" selected>NONE</option>
+        <option value="CONSTANT">CONSTANT (500ms)</option>
+        <option value="CONSTANT_5">CONSTANT (5 s)</option>
+        <option value="CONSTANT_10">CONSTANT (10 s)</option>
+        <option value="UNIFORM_500">UNIFORM 500ms</option>
+        <option value="UNIFORM_1">UNIFORM 1 s</option>
+        <option value="UNIFORM_5">UNIFORM 5 s</option>
+        <option value="UNIFORM_10">UNIFORM 10 s</option>
+      </select>--!>
+      <label for="blocking-config">Blocking policy:</label>
+      <select id="blocking-config" name="blocking-config">
+        <option value="NONE" selected>NONE</option>
+        <option value="RENDER">RENDER</option>
+        <!-- <option value="INPUT">INPUT</option> -->
+         <option value="SERIAL">SERIAL</option>
+         <option value="STICKY">STICKY</option>
+      </select>
+      <label for="indicator-config">Indicator:</label>
+      <select id="indicator-config" name="indicator-config">
+        <option value="NONE" selected>NONE</option>
+        <option value="SPINNER">SPINNER</option>
+      </select>
+      <label for="correspondence-config">Correspondence:</label>
+      <select id="correspondence-config" name="correspondence-config">
+        <option value="NONE" selected>NONE</option>
+        <option value="LABEL">LABEL</option>
+        <option value="SHOWALL">SHOWALL</option>
+        <option value="TRENDLINE">TRENDLINE</option>
+      </select>
+      <label for="task-config">Task type:</label>
+      <select id="task-config" name="task-config">
+        <option value="THRESHOLD" selected>THRESHOLD</option>
+        <option value="EXTREMA">EXTREMA</option>
+        <option value="TREND">TREND</option>
+      </select>
+      <label for="data-config">Data Gen:</label>
+      <select id="data-config" name="data-config">
+        <option value="CANNED" selected>CANNED</option>
+        <option value="RANDOM">RANDOM</option>
+      </select>
+      <label for="widget-config">Widget:</label>
+      <select id="widget-config" name="widget-config">
+        <option value="SLIDER">SLIDER</option>
+        <option value="MAP">MAP</option>
+        <option value="INPLACEMAP">INPLACEMAP</option>
+        <option value="BUTTONS" selected>BUTTONS</option>
+      </select>
+    </div>
+    <div class="content-wrapper">
+      <div id="step-0" class="step current">
+        <h4>Interactive Visualization User Study</h4>
+        <p>This HIT consists of a series of visual analysis tasks. In these tasks, you will be presented with a bar chart visualization of some data, and a time slider which controls what data appears in the bar chart according to the position of the slider. You will be asked to read values from this visualization, which may require interacting with the slider to reveal more information.</p>
+        <p>Each task consists of tracking the height of a highlighted bar over time. We will present precisely what information you should pay attention to within the task. You are able to freely interact with the visualization, but you should try and make a quick visual judgment to complete the task. For each task, a variety of different data will be shown.</p>
+        <p>You will receive a $0.20 reward for each task completed. You can keep track of your accumulated reward in the "Current Reward" box. After completing all of the tasks, you will receive a $1.00 completion bonus reward. You <b>must</b> complete all the tasks to receive the completion bonus. If you do not wish to complete all the tasks, you can press the "Finish and claim current reward" button to exit this HIT and be paid your accumulated reward. You will only be paid once you complete all the tasks or click the finish button.</p>
+        <p>The results of these tasks will be used for a research study on visual perception for interactive visualizations. You may view our <a href="./policy.html" target="_blank">privacy policy</a> for more information.</p>
+        <p>If you are ready to begin, please click the "Start" button below.</p>
+
+        <button id="start">Start</button>
+      </div>
+      <div id="step-123" class="step">
+        <div id="step-2-instructions" class="step">
+          <h4>Instructions</h4>
+          <p>In these tasks you will be asked to read data by interacting with a data visualization like the one shown below. You can drag the time slider below the bar chart, which will filter the data by the year selected. The corresponding bar chart will update accordingly. Using this interactive visualization, you will try to answer an associated question given in the tasks.</p>
+          <p>Spend some time familiarizing yourself with the visualization below. The data shown here will be different from those shown in the tasks, however the visualization will remain the same. Make sure you understand how to read the data, and interact with the slider before proceeding.</p>
+          <!-- <p>When you are ready, you can click the "Continue" button below which will remove the visualization and allow you to insert your answer for the task. After selecting your answer, you may press the "Submit task" button to submit the current task. When you submit an answer, the next task will automatically load. Once all the tasks have been completed, you will have completed the HIT and receive a bonus payment.</p> -->
+          <p>When you are ready, you can click the "Next" button below to interact with another visualization where we introduce loading delay.</p>
+        </div>
+        <div id="step-3-instructions" class="step">
+          <h4>Instructions</h4>
+          <p>The rest of the tasks for this experiment are similar to the training tasks you just completed, except you will not be shown the correct answer after submission. In addition, the dataset and loading delay will change randomly between each task. This is done intentionally, we want to see how your performance changes in the face of different delays.</p>
+          <p>When you are ready, you can click the "Next" button below to start working on the rest of the tasks.</p>
+        </div>
+        <!-- <h4>Instructions</h4> -->
+        <!-- <p id="step-1-instructions" class="step">Before starting the tasks in this experiment, we ask you to complete a set of qualification tasks that will guage your ability to read values from a data visualization. Look at the charts below, and answer the associated multiple-choice question at the end by selecting one of the answer choices and pressing the "Submit task" button. If your submission is correct, then you will proceed to the next task, otherwise you will not be able to continue the HIT.</p> -->
+        <!-- <p id="step-2-instructions" class="step">The following task is a training task that will help you understand the types of tasks that you will be asked to complete in this experiment. Whereas before with the qualification tasks you read values from a static data visualization, now you will be asked to read values by interacting with the data visualization. You can select some of the bars on the left bar chart, which will filter the data by the months selected. The corresponding scatterplot and table will update accordingly. Look at the charts below, and answer the associated question at the end by writing your answer in the answer box and pressing the "Submit task" button. In these training tasks you will be shown the correct answer after submission. You can then proceed to the next task by pressing "Continue".</p> -->
+        <!-- <p id="step-3-instructions" class="step">The rest of the tasks for this experiment are similar to the training tasks you just completed, except you will not be shown the correct answer after submission. Look at the charts below, and answer the associated question at the end by writing your answer in the answer box and pressing the "Submit task" button. When you submit an answer, the next task will automatically load. Once all the tasks have been completed, you will receive a bonus payment.</p> -->
+        <!-- <p id="step-3-instructions" class="step">Whereas before with the qualification tasks you read values from a static data visualization, now you will be asked to read values by interacting with the data visualization. You can select some of the bars on the left bar chart, which will filter the data by the months selected. The corresponding scatterplot and table will update accordingly. Look at the charts below, and answer the associated question at the end by writing your answer in the answer box and pressing the "Submit task" button. When you submit an answer, the next task will automatically load. Once all the tasks have been completed, you will receive a bonus payment.</p> -->
+        <!-- <p id="step-3-instructions" class="step">In these tasks you will be asked to read values by interacting with a data visualization. You can drag the time slider below the bar chart, which will filter the data by the year selected. The corresponding bar chart will update accordingly. Using this interactive visualization, try to answer the associated question given in the task. When you are ready, you can click the "Continue" button below which will remove the visualization and allow you to insert your answer for the task. After selecting your answer, you may press the "Submit task" button to submit the current task. When you submit an answer, the next task will automatically load. Once all the tasks have been completed, you will have completed the HIT and receive a bonus payment.</p> -->
+        <div class="task-wrapper">
+          <h4><span id="task-type-title"></span> <span id="current-task-num"></span></h4>
+          <div class="reward-box">
+            <span id="task-type"></span> completed: <span id="tasks"></span>/<span id="total-tasks"></span>
+            <br>
+            <span id="reward" class="hidden">Current reward earned: $<span id="money"></span></span>
+          </div>
+          <p id="question"></p>
+        </div>
+        <div id="viz">
+          <div id="map-wrapper" class="hidden">
+            <div id="state-info"><p id="state-name">&nbsp</p></div>
+          </div>
+          <div id="buttons-wrapper" class="hidden">
+          </div>
+          <div id="results-wrapper">
+            <div class="month-label">
+              <h4 id="current-month"></h4>
+            </div>
+            <div class="month-chart-wrapper">
+              <svg width="400" height="300" class="month_chart"></svg>
+            </div>
+            <div id="slider-wrapper" class="hidden">
+              <div id="slider-label">Year:</div>
+              <div id="slider"></div>
+              <div id="slider-value"></div>
+            </div>
+          </div>
+        </div>
+        <div id="question-wrapper" class="hidden">
+          <div id="input"></div>
+          <span id="invalid" class="invalid hidden">Invalid input</span>
+          <span id="correct"></span>
+        </div>
+        <br>
+        <br>
+        <div id="instruction-buttons">
+          <button id="next">Next</button>
+        </div>
+        <div id="task-buttons">
+          <button id="submit">Submit task</button>
+          <button id="answer" class="hidden">Continue</button>
+          <button id="continue" class="hidden">Continue</button>
+          <button id="cancel" class="hidden" disabled>Finish and claim current reward</button>
+        </div>
+        <br>
+        <br>
+        <div id="all-charts-wrapper">
+        </div>
+      </div>
+      <div id="step-4" class="step">
+        <h4>Usability Survey</h4>
+        <p>You have successfully completed all the visual analysis tasks. Before submitting this HIT, please complete the following usability survey corresponding to the tasks you just completed. When you are finished with the survey, you may click the "Finish HIT" button below to complete this HIT.</p>
+        <label for="confidence">How confident are you that your answers are correct?:</label><br>
+        <label><input type="radio" name="confidence" value="1">Not confident</label>
+        <label><input type="radio" name="confidence" value="2">Slightly confident</label>
+        <label><input type="radio" name="confidence" value="3">Fairly confident</label>
+        <label><input type="radio" name="confidence" value="4">Very confident</label>
+        <label><input type="radio" name="confidence" value="5">Extremely confident</label>
+        <br><br>
+        <label for="usability">How difficult was it to use the visualizations?:</label><br>
+        <label><input type="radio" name="usability" value="1">Very easy</label>
+        <label><input type="radio" name="usability" value="2">Easy</label>
+        <label><input type="radio" name="usability" value="3">Neutral</label>
+        <label><input type="radio" name="usability" value="4">Difficult</label>
+        <label><input type="radio" name="usability" value="5">Very difficult</label>
+        <br><br>
+        <label for="difficulty">How difficult was it to complete the tasks?:</label><br>
+        <label><input type="radio" name="difficulty" value="1">Very easy</label>
+        <label><input type="radio" name="difficulty" value="2">Easy</label>
+        <label><input type="radio" name="difficulty" value="3">Neutral</label>
+        <label><input type="radio" name="difficulty" value="4">Difficult</label>
+        <label><input type="radio" name="difficulty" value="5">Very difficult</label>
+        <br><br>
+        <label for="comments">If you have any other comments about the tasks you just completed, the visualizations that you used, or the study procedure in general, please write them in the box below (optional):</label><br>
+        <textarea id="comments" name="comments"></textarea>
+        <br>
+        <span id="invalid-survey" class="invalid hidden">You must complete all the required survey questions above to submit</span>
+        <br><br>
+        <button id="submit-usability">Finish HIT</button>
+      </div>
+      <div id="step-5" class="step">
+        <h4>Demographic Survey</h4>
+        <p>Thank you for your agreement to participate in our research study. Before proceeding with the tasks, we ask you to fill out this brief demographic survey to better understand the background of our participants. Completion of this survey is optional, and you may proceed at any time by clicking the "Continue" button below. Your individual response to this survey will not be reported, but rather aggregated together with the rest of the participant population.</p>
+        <label for="age">Your Age:</label><br>
+        <input type="text" id="age" name="age"><br><br>
+        <label for="gender">Your Gender:</label><br>
+        <select id="gender" name="gender">
+          <option value="N" selected>Decline to state</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+          <option value="O">Other</option>
+        </select><br><br>
+        <label for="education">What is the highest educational degree you have earned?:</label><br>
+        <select id="education" name="education">
+          <option value="N" selected>Decline to state</option>
+          <option value="Middle">Middle School Diploma</option>
+          <option value="High">High School Diploma</option>
+          <option value="Bachelors">Bachelor's Degree</option>
+          <option value="Masters">Master's Degree</option>
+          <option value="Doctorate">Doctorate Degree</option>
+        </select><br><br>
+        <label for="occupation">Your Occupation:</label><br>
+        <input type="text" id="occupation" name="occupation"><br><br>
+        <label for="computer-usage">How often do you use a computer on a typical week?:</label><br>
+        <label><input type="radio" name="computer-usage" value="1">Never</label>
+        <label><input type="radio" name="computer-usage" value="2">Rarely</label>
+        <label><input type="radio" name="computer-usage" value="3">Sometimes</label>
+        <label><input type="radio" name="computer-usage" value="4">Often</label>
+        <label><input type="radio" name="computer-usage" value="5">Always</label>
+        <br><br>
+        <label for="visualization-exp">How often do you interact with data visualizations on a typical week? (e.g. tables, charts, graphs):</label><br>
+        <label><input type="radio" name="visualization-exp" value="1">Never</label>
+        <label><input type="radio" name="visualization-exp" value="2">Rarely</label>
+        <label><input type="radio" name="visualization-exp" value="3">Sometimes</label>
+        <label><input type="radio" name="visualization-exp" value="4">Often</label>
+        <label><input type="radio" name="visualization-exp" value="5">Always</label>
+        <br>
+        <br>
+        <button id="submit-demographic">Continue</button>
+      </div>
+    </div>
+  </body>
+</html>
