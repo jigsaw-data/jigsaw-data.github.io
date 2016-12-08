@@ -77,7 +77,7 @@
       }
 
       .highlight {
-        background: yellow;
+        background: rgba(255,255,0,0.4);
       }
 
       svg {
@@ -94,17 +94,23 @@
         padding: 5px 10px;
       }
 
-      .users-chart-wrapper, .month-chart-wrapper,
+      #all-charts-wrapper, .users-chart-wrapper, .month-chart-wrapper,
       #map-wrapper, #results-wrapper {
         display: inline-block;
         vertical-align: top;
       }
       #buttons-wrapper {
         display:inline-block;
-        margin-left: 100px;
-        margin-right: 30px;
+        /*margin-left: 100px;*/
+        margin-right: 20px;
         border: 1px solid #ccc;
         border-bottom: none;
+      }
+      #all-charts-wrapper {
+        width: 700px;
+      }
+      #all-charts-wrapper.hidden, #map-wrapper.hidden {
+        display: none;
       }
       .button-widgets {
         list-style-type: none;
@@ -205,15 +211,19 @@
         width: 400px;
         height: 100px;
       }
+
+      button {
+        margin-left: 100px;
+      }
     </style>
 
-    <script src="../experiment/jquery.min.js"></script>
-    <script src="../experiment/jquery-ui.min.js"></script>
-    <script src="../experiment/d3.v4.min.js"></script>
-    <script src="../experiment/topojson.v1.min.js"></script>
-    <script src="../experiment/d3-geo.v1.min.js"></script>
-    <script src="../experiment/seedrandom.min.js"></script>
-    <script src="../experiment/api.js"></script>
+    <script src="jquery.min.js"></script>
+    <script src="jquery-ui.min.js"></script>
+    <script src="d3.v4.min.js"></script>
+    <script src="topojson.v1.min.js"></script>
+    <script src="d3-geo.v1.min.js"></script>
+    <script src="seedrandom.min.js"></script>
+    <script src="api.js"></script>
     <script src="experiment.js"></script>
   </head>
   <body>
@@ -239,15 +249,14 @@
       </select>
       <label for="indicator-config">Indicator:</label>
       <select id="indicator-config" name="indicator-config">
-        <option value="NONE" selected>NONE</option>
-        <option value="SPINNER">SPINNER</option>
+        <option value="NONE">NONE</option>
+        <option value="SPINNER" selected>SPINNER</option>
       </select>
       <label for="correspondence-config">Correspondence:</label>
       <select id="correspondence-config" name="correspondence-config">
-        <option value="NONE" selected>NONE</option>
-        <option value="LABEL">LABEL</option>
+        <option value="NONE">NONE</option>
+        <option value="LABEL" selected>LABEL</option>
         <option value="SHOWALL">SHOWALL</option>
-        <option value="TRENDLINE">TRENDLINE</option>
       </select>
       <label for="task-config">Task type:</label>
       <select id="task-config" name="task-config">
@@ -265,24 +274,24 @@
         <option value="SLIDER">SLIDER</option>
         <option value="MAP">MAP</option>
         <option value="INPLACEMAP">INPLACEMAP</option>
-        <option value="BUTTONS" selected>BUTTONS</option>
+        <option value="FACET" selected>FACET</option>
       </select>
     </div>
     <div class="content-wrapper">
       <div id="step-0" class="step current">
         <h4>Interactive Visualization User Study</h4>
-        <p>This HIT consists of a series of visual analysis tasks. In these tasks, you will be presented with a bar chart visualization of some data, and a time slider which controls what data appears in the bar chart according to the position of the slider. You will be asked to read values from this visualization, which may require interacting with the slider to reveal more information.</p>
-        <p>Each task consists of tracking the height of a highlighted bar over time. We will present precisely what information you should pay attention to within the task. You are able to freely interact with the visualization, but you should try and make a quick visual judgment to complete the task. For each task, a variety of different data will be shown.</p>
-        <p>You will receive a $0.20 reward for each task completed. You can keep track of your accumulated reward in the "Current Reward" box. After completing all of the tasks, you will receive a $1.00 completion bonus reward. You <b>must</b> complete all the tasks to receive the completion bonus. If you do not wish to complete all the tasks, you can press the "Finish and claim current reward" button to exit this HIT and be paid your accumulated reward. You will only be paid once you complete all the tasks or click the finish button.</p>
-        <p>The results of these tasks will be used for a research study on visual perception for interactive visualizations. You may view our <a href="./policy.html" target="_blank">privacy policy</a> for more information.</p>
-        <p>If you are ready to begin, please click the "Start" button below.</p>
+        <p>This HIT consists of a series of visual analysis tasks. In these tasks, you will be presented with an interactive visualization dashboard of some sales data for an ecommerce website. You will be asked to read values from this visualization, which may require interacting with it to reveal more information.</p>
+        <p>The results of these tasks will be used for a research study on visual perception for interactive visualizations. The purpose of the study is to understand and measure how accurately and quickly humans can perform tasks in interactive visualization settings, and the summaries may be included in future research publications. A primary goal of this work is to help us design better interfaces for a variety of interactive tasks and conditions. You may view our <a href="./policy.html" target="_blank">privacy policy</a> for more information.</p>
+        <p>Your participation in this study is voluntary, and you will receive a $0.10 reward for each task completed. You can keep track of your accumulated reward in the "Current Reward" box. After completing all of the tasks, you will receive a $0.80 completion bonus reward. You <b>must</b> complete all the tasks to receive the completion bonus. If you do not wish to complete all the tasks, you can press the "Finish and claim current reward" button to exit this HIT and be paid your accumulated reward. You will only be paid once you complete all the tasks or click the finish button.</p>
+        <p>If you are ready to begin, please click the button below.</p>
 
-        <button id="start">Start</button>
+        <button id="start">I understand, and consent to participate</button>
       </div>
       <div id="step-123" class="step">
         <div id="step-2-instructions" class="step">
           <h4>Instructions</h4>
-          <p>In these tasks you will be asked to read data by interacting with a data visualization like the one shown below. You can drag the time slider below the bar chart, which will filter the data by the year selected. The corresponding bar chart will update accordingly. Using this interactive visualization, you will try to answer an associated question given in the tasks.</p>
+          <p>In these tasks you will be asked to read sales data by interacting with a data visualization like the one shown below. You can hover over any of the US states on the left, which will filter the data by the state selected. The corresponding bar chart will update accordingly. The bar chart shows sales for the months of January to May for the given state selected. The horizontal axis displays the months, and the vertical axis displays the units sold in a month. Using this interactive visualization, you will try to answer an associated question given in the tasks.</p>
+          <p>Each task consists of tracking the number of sales across different regions for a given month. We will present precisely what information you should pay attention to within the task. During a task you are able to freely interact with the visualization, but you should try and make quick judgments to answer the question given in the task. For each task, a variety of different data will be shown.</p>
           <p>Spend some time familiarizing yourself with the visualization below. The data shown here will be different from those shown in the tasks, however the visualization will remain the same. Make sure you understand how to read the data, and interact with the slider before proceeding.</p>
           <!-- <p>When you are ready, you can click the "Continue" button below which will remove the visualization and allow you to insert your answer for the task. After selecting your answer, you may press the "Submit task" button to submit the current task. When you submit an answer, the next task will automatically load. Once all the tasks have been completed, you will have completed the HIT and receive a bonus payment.</p> -->
           <p>When you are ready, you can click the "Next" button below to interact with another visualization where we introduce loading delay.</p>
@@ -313,12 +322,14 @@
           </div>
           <div id="buttons-wrapper" class="hidden">
           </div>
+          <div id="all-charts-wrapper" class="hidden">
+          </div>
           <div id="results-wrapper">
             <div class="month-label">
               <h4 id="current-month"></h4>
             </div>
             <div class="month-chart-wrapper">
-              <svg width="400" height="300" class="month_chart"></svg>
+              <svg width="400" height="300" class="month_chart "></svg>
             </div>
             <div id="slider-wrapper" class="hidden">
               <div id="slider-label">Year:</div>
@@ -345,8 +356,6 @@
         </div>
         <br>
         <br>
-        <div id="all-charts-wrapper">
-        </div>
       </div>
       <div id="step-4" class="step">
         <h4>Usability Survey</h4>

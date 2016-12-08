@@ -10,6 +10,10 @@
     DEMOGRAPHIC: 5,
   }
 
+  // a few interal design toggles
+  var SHOWGUIDES = true;
+  var HIGHLIGHTBAR = false;
+
 
   var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
 
@@ -77,7 +81,7 @@
     SLIDER: 0,
     MAP: 1,
     INPLACEMAP: 2, // currently only compability with extrema task and no spinner or label are needed
-    BUTTONS: 3,
+    FACET: 3,
   };
 
 
@@ -158,11 +162,11 @@
     if (debug) {
       // expDelay = DelayModes.NONE;
       blocking = BlockingModes.NONE;
-      indicator = IndicatorModes.NONE;
-      correspondence = CorrespondenceModes.NONE;
+      indicator = IndicatorModes.SPINNER;
+      correspondence = CorrespondenceModes.LABEL;
       taskMode = TaskModes.THRESHOLD;
       dataMode = DataModes.CANNED;
-      widgetMode = WidgetModes.BUTTONS;
+      widgetMode = WidgetModes.FACET;
     } else {
       var combos = [];
       for (var w of Object.keys(WidgetModes)) {
@@ -502,7 +506,8 @@
     // get rid of old one
     d3.select(".month_chart").selectAll("*").remove();
     var month_svg = d3.select(".month_chart");
-    drawChart(data, idx, month_svg, true);
+    var margin = {top: 20, right: 30, bottom: 50, left: 70};
+    drawChart(data, idx, month_svg, margin);
   }
 
   function drawAppend(data, idx) {
@@ -520,12 +525,14 @@
       // high light the results briefly
     } else {
       // create a new div and pass to create
+      $('#all-charts-wrapper').removeClass('hidden');
       var month_svg = d3.select('#all-charts-wrapper').append('svg');
       month_svg.attr('id', 'month-chart-'+idx)
                .attr('class', 'temp-chart')
-               .attr('width', 200)
+               .attr('width', 175)
                .attr('height', 150);
-      drawChart(data, idx, month_svg, false);
+      var margin = {top: 20, right: 20, bottom: 30, left: 30};
+      drawChart(data, idx, month_svg, margin);
     }
   }
 
@@ -536,7 +543,7 @@
     }, 500);
   }
 
-  function drawChart(data, idx, month_svg, showAxisLabel) {
+  function drawChart(data, idx, month_svg, margin) {
 
     var month_counts = [];
     for (var i = 0; i < months.length; i++) {
@@ -546,14 +553,13 @@
       });
     }
 
-    var margin = {top: 20, right: 30, bottom: 50, left: 70},
-        month_width = month_svg.attr("width") - margin.left - margin.right,
+    var month_width = month_svg.attr("width") - margin.left - margin.right,
         month_height = month_svg.attr("height") - margin.top - margin.bottom;
 
     var x_month = d3.scaleBand()
                     .domain(months)
                     .rangeRound([0, month_width])
-                    .padding(0.1);
+                    .padding(0.4);
 
     var y_month = d3.scaleLinear()
                     .domain([0, 100])
@@ -562,19 +568,20 @@
     var g_month = month_svg.append("g")
                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    g_month.append("g")
-           .attr("class", "axis axis--x")
-           .attr("transform", "translate(0," + month_height + ")")
-           .call(d3.axisBottom(x_month));
 
     if (correspondence === CorrespondenceModes.SHOWALL) {
+      var title = idx+yearStart;
+      if ((widgetMode === WidgetModes.FACET) || (widgetMode === WidgetModes.MAP) ) {
+        title = statesIndex[idx];
+      }
       month_svg.append("text")
              .attr("y", margin.top - 10)
              .attr("x", (month_width + margin.left + margin.right) / 2)
              .attr("text-anchor", "middle")
-             .text(idx+yearStart);
+             .text(title);
     }
-    if (showAxisLabel) {
+
+    if (correspondence !== CorrespondenceModes.SHOWALL) {
       month_svg.append("text")
                .attr("y", month_height + margin.top + margin.bottom - 14)
                .attr("x", (month_width + margin.left + margin.right) / 2)
@@ -586,18 +593,36 @@
                .attr("y", 35)
                .attr("text-anchor", "middle")
                .attr("x", -(month_height + 40) / 2)
-               .text("Number of users");
+               .text("Units sold");
     }
 
-    if (taskMode === TaskModes.THRESHOLD) {
-      g_month.append("svg:line")
+    if (SHOWGUIDES) {
+      g_month.selectAll('.line')
+        .data([10,20,30,40,50,60,70,80,90,100])
+        .enter()
+        .append("svg:line")
         .attr("x1", 0)
         .attr("x2", month_width)
-        .attr("y1", y_month(thresholdValue))
-        .attr("y2", y_month(thresholdValue))
+        .attr("y1", function(d){ return y_month(d)})
+        .attr("y2", function(d){ return y_month(d)})
         .style("stroke", "rgb(189, 189, 189)");
     }
 
+    // do not give the user guideline support
+    // but maybe for all the vis?
+    //if (taskMode === TaskModes.THRESHOLD) {
+    //  g_month.append("svg:line")
+    //    .attr("x1", 0)
+    //    .attr("x2", month_width)
+    //    .attr("y1", y_month(thresholdValue))
+    //    .attr("y2", y_month(thresholdValue))
+    //    .style("stroke", "rgb(189, 189, 189)");
+    //}
+
+    g_month.append("g")
+         .attr("class", "axis axis--x")
+         .attr("transform", "translate(0," + month_height + ")")
+         .call(d3.axisBottom(x_month));
     g_month.append("g")
            .attr("class", "axis axis--y")
            .call(d3.axisLeft(y_month));
@@ -608,7 +633,9 @@
                      .data(month_counts)
                      .enter()
                      .append("rect")
-                     .attr("class", function(d, i) { return i === trackIdx ? 'bar highlight' : 'bar'; })
+                     .attr("class", function(d, i) {
+                       if (HIGHLIGHTBAR) {  return i === trackIdx ? 'bar highlight' : 'bar'; }
+                       return 'bar';})
                      .attr("x", function(d) {return x_month(d.name); })
                      .attr("y", function(d) {return y_month(d.count); })
                      .attr("width", x_month.bandwidth())
@@ -625,15 +652,10 @@
     if (id !== 0) {
       state.eventLog.push({event: 'slide', id: id, dataIdx: idx, ts: Date.now()});
       if (indicator === IndicatorModes.SPINNER) {
-        d3.select('.month-chart-wrapper').attr('class', 'month-chart-wrapper spinner');
+        var wrapper = correspondence === CorrespondenceModes.SHOWALL ? '#all-charts-wrapper': '.month-chart-wrapper';
+        $(wrapper).addClass('spinner');
       }
     }
-
-
-    // a bit hacky; dont need to check anything because if the chart is there, then highlight,
-    // if not, it wont work
-    // needed because the render call is triggered after delay but this could happen soon
-    tryHighlightExistingChart(idx);
 
     function checkSticky(id, idx) {
       // stickiness basically ensures that new frames don't flash
@@ -737,29 +759,34 @@
 
       // spinner
       if (indicator === IndicatorModes.SPINNER && id !== 0) {
+        var wrapper = correspondence === CorrespondenceModes.SHOWALL ? '#all-charts-wrapper': '.month-chart-wrapper';
         if (blocking === BlockingModes.RENDER) {
-          d3.select('.month-chart-wrapper').attr('class', 'month-chart-wrapper');
+          $(wrapper).removeClass('spinner');
         } else if (blocking === BlockingModes.INPUT || blocking === BlockingModes.STICKY || blocking === BlockingModes.SERIAL || blocking === BlockingModes.NONE) {
           var requests = state.eventLog.filter(function(e) { return e.event === 'slide'; }).length;
           var rendered = state.eventLog.filter(function(e) { return e.event === 'render'; }).length;
-          if (requests === rendered) {
-            d3.select('.month-chart-wrapper').attr('class', 'month-chart-wrapper');
+          if (requests === rendered || (correspondence === CorrespondenceModes.SHOWALL && requests === rendered + 1)) {
+            $(wrapper).removeClass('spinner');
           }
         }
       }
 
       // actual charts
+      // for showall, only show the small multiples
       if (correspondence === CorrespondenceModes.SHOWALL) {
         drawAppend(data, idx);
-      }
-      if (widgetMode === WidgetModes.INPLACEMAP) {
-        drawInMap(data, idx);
       } else {
-        drawInplace(data, idx);
+        if (widgetMode === WidgetModes.INPLACEMAP) {
+          drawInMap(data, idx);
+        } else {
+          drawInplace(data, idx);
+        }
       }
 
-      state.eventLog.push({event: 'render', id: id, dataIdx: idx, ts: Date.now()});
-
+      // dont render
+      if (!((id === 0) && (correspondence === CorrespondenceModes.SHOWALL))) {
+        state.eventLog.push({event: 'render', id: id, dataIdx: idx, ts: Date.now()});
+      }
       if (blocking === BlockingModes.STICKY || blocking === BlockingModes.SERIAL) {
         setTimeout(function() {
           if (renderQueue.length > 0) {
@@ -789,7 +816,8 @@
     }
     // remove spinner
     if (indicator === IndicatorModes.SPINNER) {
-      d3.select('.month-chart-wrapper').attr('class', 'month-chart-wrapper');
+      var wrapper = correspondence === CorrespondenceModes.SHOWALL ? '#all-charts-wrapper': '.month-chart-wrapper';
+      $(wrapper).removeClass('spinner');
     }
     state.eventId = -1;
     renderQueue = [];
@@ -965,7 +993,7 @@
       });
     } else if (widgetMode === WidgetModes.MAP || widgetMode === WidgetModes.INPLACEMAP) {
       drawMap(data);
-    } else if (widgetMode === WidgetModes.BUTTONS) {
+    } else if (widgetMode === WidgetModes.FACET) {
       // remove prev if exists
       $('.button-widgets').remove();
       // some closure stuff
@@ -978,7 +1006,11 @@
           }
           d3.select('#button_' + currIdx).classed('selected', false);
           d3.select('#button_' + idx).classed('selected', true);
-          renderDataSelection(data, idx, expDelay);
+          if (correspondence === CorrespondenceModes.SHOWALL && $('#month-chart-'+idx).length) {
+            tryHighlightExistingChart(idx);
+          } else {
+            renderDataSelection(data, idx, expDelay);
+          }
           return;
         };
       }
@@ -987,8 +1019,12 @@
         $('#buttons-wrapper').append(b);
         $('#button_'+i).hover(genClickCallback(data, i, expDelay));
       }
-      state.currentMapPos = 0;
-      d3.select('#button_0').classed('selected', true);
+      if (correspondence === CorrespondenceModes.SHOWALL) {
+        state.currentMapPos = -1;
+      } else {
+        state.currentMapPos = 0;
+        d3.select('#button_0').classed('selected', true);
+      }
     }
 
     renderDataSelection(data, val, DelayModes.NONE);
@@ -997,9 +1033,11 @@
   }
 
   function showTrend(trendIdx) {
-    var answers = state.step === Modes.TRAIN ? trainingTrendAnswers : trendAnswers;
+    // var answers = state.step === Modes.TRAIN ? trainingTrendAnswers : trendAnswers;
+    var answers = delays;
     function trend(i) {
-      return {x: i, y: TrendModes[answers[trendIdx]][i]};
+      // return {x: i, y: TrendModes[answers[trendIdx]][i]};
+      return {x: i, y: DelayModesData[answers[trendIdx]][i]};
     }
 
     var width = height = 100;
@@ -1057,7 +1095,7 @@
       if (taskMode === TaskModes.TREND) {
         // show a multiple choice trend input
         $('#input').html('<div class="trend-input-wrapper"></div>');
-        for (var i = 0; i < trendAnswers.length; i++) {
+        for (var i = 0; i < delays.length; i++) {
           showTrend(i);
         }
         if (state.input !== '') {
@@ -1092,27 +1130,29 @@
       }
     } else if (taskMode === TaskModes.EXTREMA){
       if (acceptingAnswer) {
-        question = 'For which year did the highlighted bar reach its maximum height? ' +
-                   'Write your answer in the text box, and click the "Submit task" button below to submit your answer. ' +
-                   'Your answer should be within the range ' + yearStart + '-' + (yearStart + years - 1) + '.';
+        question = '<p><strong>Which state had the most units sold for the month of March?</strong></p>' +
+                   'Write your answer in the text box, and click the "Submit task" button below to submit your answer. ';
       } else {
-        question = 'For which year did the highlighted bar reach its maximum height? ' +
+        question = '<p><strong>Which state had the most units sold for the month of March?</strong></p>' +
+                   'You are not given any time limit, but you should try to answer the question as quickly as possible. ' +
                    'Click on the "Continue" button below to write your answer. ' +
-                   'Note that you may view the visualization, but not interact with it when writing your answer.';
+                   'Note that you may view the visualization, but not continue interacting with it when writing your answer.';
       }
     } else {
       // must be THRESHOLD
       if (acceptingAnswer) {
-        question = "Does the height of the highlighted bar ever exceed the value of " + thresholdValue + '? ' +
+        question = '<p><strong>Does any state have more than ' + thresholdValue + ' units sold for the month of March?</strong></p>' +
                    'Click on YES or NO, and click the "Submit task" button below to submit your answer.';
       } else {
-        question = "Does the height of the highlighted bar ever exceed the value of " + thresholdValue + '? ' +
+        question = '<p><strong>Does any state have more than ' + thresholdValue + ' units sold for the month of March?</strong></p>' +
+                   'You are not given any time limit, but you should try to answer the question as quickly as possible. ' +
                    'Click on the "Continue" button below to select your answer. ' +
-                   'Note that you may view the visualization, but not interact with it when selecting your answer.';
+                   'Note that you may view the visualization, but not continue interacting with it when ' +
+                   'selecting your answer.';
       }
     }
     if (state.step === Modes.TRAIN && state.trainTaskNum > 0) {
-      question += '<br><br>Note that we have increased the loading delay of the graph from the previous task. ' +
+      question += '<br><br>Note that we have increased the loading delay of the visualization from the previous task. ' +
                   'This is intentional, and you should spend some time adjusting your interactions if need be ' +
                   'to prepare for the regular tasks.';
     }
@@ -1127,10 +1167,13 @@
       if (disable) {
         $('#slider').slider('option', 'disabled', false);
       }
-    } else if (widgetMode === WidgetModes.BUTTONS) {
+    } else if (widgetMode === WidgetModes.FACET) {
       $('#buttons-wrapper').removeClass('hidden');
     } else {
       $('#map-wrapper').removeClass('hidden');
+    }
+    if (correspondence === CorrespondenceModes.SHOWALL) {
+      $('.month_chart').addClass('hidden');
     }
   }
   function disableWidget() {
@@ -1138,8 +1181,8 @@
       $('#slider').slider('option', 'disabled', true);
     } else if (widgetMode === WidgetModes.MAP) {
       d3.selectAll('.states').on('mouseover', null);
-    } else if (widgetMode === WidgetModes.BUTTONS) {
-      $('.button-widgets').unbind("click");
+    } else if (widgetMode === WidgetModes.FACET) {
+      $('.button-widgets').off('mouseenter mouseleave');
     }
   }
   // Updates the UI view given a new state
@@ -1158,8 +1201,6 @@
       return;
     } else {
       $('#step-123').addClass('current');
-      // get rid of the cumulated view
-      d3.select("#all-charts-wrapper").selectAll("*").remove();
       if (state.showingInstructions) {
         $('#step-' + state.step + '-instructions').addClass('current');
         $('.task-wrapper').addClass('hidden');
@@ -1257,13 +1298,13 @@
   function isValid(input, taskMode) {
     var notEmpty = (input != null && input !== '');
     if (taskMode === TaskModes.EXTREMA && notEmpty) {
-      if (widgetMode !== WidgetModes.INPLACEMAP) {
+      if (widgetMode === WidgetModes.SLIDER) {
         var val = parseInt(input, 10);
         if (isNaN(val)) {
           return false;
         }
         return (yearStart <= val && val <= yearStart + years - 1);
-      } else {
+      } else if ((widgetMode === WidgetModes.INPLACEMAP) || (widgetMode === WidgetModes.FACET)) {
         if (statesIndex.indexOf(input) < 0) {
           return false;
         }
@@ -1277,9 +1318,9 @@
     if (taskMode === TaskModes.TREND) {
       return trends[taskNum];
     } else if (taskMode === TaskModes.EXTREMA) {
-      if (widgetMode !== WidgetModes.INPLACEMAP) {
+      if (widgetMode === WidgetModes.SLIDER) {
         return '' + (yearStart + barData.indexOf(Math.max.apply(null, barData)));
-      } else {
+      } else if ((widgetMode === WidgetModes.INPLACEMAP) || (widgetMode === WidgetModes.FACET)) {
         return statesIndex[barData.indexOf(Math.max.apply(null, barData))];
       }
     } else if (taskMode === TaskModes.THRESHOLD) {
@@ -1448,13 +1489,12 @@
       if (state.instructionsTaskNum == 1) {
         $('#step-2-instructions h4').text('Instructions Part 2');
         $('#step-2-instructions').append(
-          '<p>We have increased the loading delay of the graph below compared ' +
-          'to the previous graph you saw. Now when you drag the slider below the ' +
-          'bar chart, the bars will not change immediately but they will change ' +
+          '<p>We have increased the loading delay of the visualization below compared ' +
+          'to the previous visualization you saw. Now when you hover over a state on ' +
+          'the left, the bars will not change immediately but they will change ' +
           'after a small amount of time. The data being shown here is exactly the ' +
-          'same as in the previous graph. Spend some time interacting with the ' +
-          'visualization below to familiarize yourself with how the delay affects ' +
-          'the graph.</p>'
+          'same as in the previous visualization. Spend some time interacting with the ' +
+          'visualization below to familiarize yourself with the effects of the new delay.</p>'
         );
         $('#step-2-instructions').append(
           '<p>When you are ready, you can click the "Next" button below to ' +
@@ -1465,18 +1505,18 @@
         $('#step-2-instructions h4').text('Instructions Part 3');
         $('#step-2-instructions').append(
           '<p>Now we have increased the loading delay even more compared ' +
-          'to the previous graph you saw, and the bars of the graph might not ' +
-          'update in the order that you drag the slider. The data being shown ' +
-          'here is exactly the same as in the previous graph. Spend some time ' +
+          'to the previous visualization you saw, and the bars of the graph might not ' +
+          'update in the order that you hover over the states. The data being shown ' +
+          'here is exactly the same as in the previous visualization. Spend some time ' +
           'interacting with the visualization below to familiarize yourself with ' +
-          'how the delay affects the graph.</p>'
+          'how the effects of the new delay.</p>'
         );
         $('#step-2-instructions').append(
           '<p>When you are ready, you can click the "Next" button below to ' +
           'start working on a set of training tasks before completing the rest ' +
           'of the tasks. In the training tasks, you will be shown the correct ' +
           'answer after submitting. In some of the training tasks, there will ' +
-          'be an intentional loading delay of the graph, and the delay will ' +
+          'be an intentional loading delay of the visualization, and the delay will ' +
           'change between tasks.</p>'
         );
       }
