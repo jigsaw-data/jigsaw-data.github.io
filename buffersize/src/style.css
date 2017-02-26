@@ -1,0 +1,106 @@
+/**
+ * Viz UI styles
+ */
+
+html {
+  font-family: sans-serif;
+  background: white;
+}
+
+.inline-block {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.widget-wrapper {
+  border: 1px solid #ccc;
+  border-bottom: none;
+}
+
+.button-widgets {
+  list-style-type: none;
+  border-bottom: 1px #ccc solid;
+  padding: 5px 35px 5px 10px;
+  font-size: 13px;
+  background: #f9f9f9;
+}
+.button-widgets.selected {
+  background: #e0e0e0;
+}
+
+.brush .extent {
+  stroke: #000;
+  fill-opacity: .125;
+}
+
+.indicator {
+  border: 3px solid #ccc;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.multiples-wrapper {
+  width: 600px;
+  height: 154px;
+}
+
+.indicator-wrapper {
+  width: 200px;
+  height: 154px;
+}
+
+
+
+/**
+ * Experiment UI styles
+ */
+
+.content-wrapper {
+  width: 800px;
+  margin: 0 auto 30px auto;
+}
+
+.button-wrapper {
+  margin: 30px 0 0 100px;
+}
+
+.button-wrapper button {
+  margin-right: 5px;
+}
+
+.radio-button-wrapper label {
+  margin-right: 15px;
+}
+
+.reward-box {
+  font-size: 0.85em;
+  border: 1px solid #333;
+  display: inline-block;
+  padding: 6px;
+  color: #333;
+}
+
+.task-input {
+  margin-top: 10px;
+}
+
+.correct {
+  color: green;
+}
+
+.invalid {
+  color: red;
+}
+
+textarea {
+  width: 400px;
+  height: 100px;
+}
