@@ -17839,7 +17839,8 @@
 	            return function () { return d3ScaleChromatic.interpolateBlues(0.8); };
 	        }
 	        return function (i) {
-	            return d3ScaleChromatic.interpolateBlues(0.8 - 0.6 * i / (bufferSize - 1));
+	            return d3ScaleChromatic.schemeDark2[i];
+	            //d3ScaleChromatic.interpolateBlues(0.8 - 0.6 * i / (bufferSize - 1));
 	        };
 	    },
 	};
