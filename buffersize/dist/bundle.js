@@ -17689,7 +17689,7 @@
 	            chart = React.createElement(Chart_1.default, { bufferSize: this.props.bufferSize, datasets: datasets, selected: selected });
 	        }
 	        else {
-	            chart = React.createElement(MultiplesChart_1.default, { bufferSize: bufferSize, datasets: datasets, multipleHeight: multipleHeight, multipleWidth: multipleWidth, selected: selected, setDomain: false, ordered: false, evictedIdx: currentItxId % bufferSize });
+	            chart = React.createElement(MultiplesChart_1.default, { bufferSize: bufferSize, datasets: datasets, multipleHeight: multipleHeight, multipleWidth: multipleWidth, selected: selected, setDomain: false, ordered: true, evictedIdx: currentItxId % bufferSize });
 	        }
 	        if (this.props.widget === 0 /* Facet */) {
 	            widget = React.createElement(WidgetFacet_1.default, { id: widgetId, bufferSize: bufferSize, facets: this.state.facets, datasets: datasets, selected: selected, updateSelection: this.updateSelection });
