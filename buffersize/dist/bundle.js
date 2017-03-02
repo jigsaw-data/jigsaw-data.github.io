@@ -7884,6 +7884,7 @@
 	var ExperimentUsability_1 = __webpack_require__(170);
 	var experiment_1 = __webpack_require__(167);
 	var experiment_2 = __webpack_require__(167);
+	var amt = false;
 	var ExperimentContainer = (function (_super) {
 	    __extends(ExperimentContainer, _super);
 	    function ExperimentContainer(props) {
@@ -7969,12 +7970,13 @@
 	            bonusReward: 1.00,
 	            taskReward: 0.20,
 	            taskNum: 1,
+	            amt: false,
 	        };
 	        return _this;
 	    }
 	    ExperimentContainer.prototype.setupExperiment = function () {
 	        var debug = this.props.debug;
-	        var _a = this.state, trainingWithinSubjectsParams = _a.trainingWithinSubjectsParams, withinSubjectsParams = _a.withinSubjectsParams;
+	        var _a = this.state, trainingWithinSubjectsParams = _a.trainingWithinSubjectsParams, withinSubjectsParams = _a.withinSubjectsParams, amt = _a.amt;
 	        function clearTask() { }
 	        function finish(opt) {
 	            var submitTo = experiment_2.getUrlParameter("turkSubmitTo");
@@ -8025,27 +8027,36 @@
 	        });
 	    };
 	    ExperimentContainer.prototype.start = function () {
-	        var e = gpaas.startExperiment(this.setupExperiment);
-	        if (e.setupSuccessful) {
-	            console.log("experiment started succesfully");
-	            this.setState({ step: "DEMOGRAPHIC" });
+	        if (amt) {
+	            var e = gpaas.startExperiment(this.setupExperiment);
+	            if (e.setupSuccessful) {
+	                console.log("experiment started succesfully");
+	                this.setState({ step: "DEMOGRAPHIC" });
+	            }
+	            else {
+	                console.log("failed to start experiment");
+	            }
 	        }
 	        else {
-	            console.log("failed to start experiment");
+	            this.setState({ step: "DEMOGRAPHIC" });
 	        }
 	    };
 	    ExperimentContainer.prototype.submitDemographic = function (data) {
 	        data = Object.assign({}, data);
 	        data.type = "DEMOGRAPHIC";
 	        console.log(data);
-	        gpaas.logData(data);
+	        if (amt) {
+	            gpaas.logData(data);
+	        }
 	        this.setState({ step: "TRAIN" });
 	    };
 	    ExperimentContainer.prototype.submitInstructions = function (data) {
 	        data = Object.assign({}, data);
 	        data.type = "INSTRUCTIONS";
 	        console.log(data);
-	        gpaas.logData(data);
+	        if (amt) {
+	            gpaas.logData(data);
+	        }
 	    };
 	    ExperimentContainer.prototype.startTraining = function () {
 	        this.setState({ step: "TRAINING_TASK" });
@@ -8060,28 +8071,38 @@
 	        this.setState({ step: "USABILITY" });
 	    };
 	    ExperimentContainer.prototype.cancelTasks = function () {
-	        gpaas.cancelTasks();
+	        if (amt) {
+	            gpaas.cancelTasks();
+	        }
 	        console.log("experiment cancelled");
 	    };
 	    ExperimentContainer.prototype.submitUsability = function (data) {
 	        data.type = "USABILITY";
 	        console.log(data);
-	        gpaas.logData(data);
-	        gpaas.nextTask();
+	        if (amt) {
+	            gpaas.logData(data);
+	            gpaas.nextTask();
+	        }
 	    };
 	    ExperimentContainer.prototype.submitTrainingAnswer = function (data) {
 	        data.type = "TRAIN";
 	        console.log(data);
-	        gpaas.logData(data);
-	        gpaas.nextTraining();
+	        if (amt) {
+	            gpaas.logData(data);
+	            gpaas.nextTraining();
+	        }
 	    };
 	    ExperimentContainer.prototype.submitTaskAnswer = function (data) {
 	        var _a = this.state, taskNum = _a.taskNum, withinSubjectsParams = _a.withinSubjectsParams;
 	        data.type = "TASK";
 	        console.log(data);
-	        gpaas.logData(data);
+	        if (amt) {
+	            gpaas.logData(data);
+	        }
 	        if (taskNum < withinSubjectsParams.length) {
-	            gpaas.nextTask();
+	            if (amt) {
+	                gpaas.nextTask();
+	            }
 	            this.setState(function (prevState) {
 	                return { taskNum: prevState.taskNum + 1 };
 	            });
