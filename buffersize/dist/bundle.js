@@ -2421,7 +2421,7 @@
 	          address = address.slice(0, index);
 	        }
 	      }
-	    } else if (index = parse.exec(address)) {
+	    } else if ((index = parse.exec(address))) {
 	      url[key] = index[1];
 	      address = address.slice(0, index.index);
 	    }
@@ -2499,7 +2499,7 @@
 	 * @returns {URL}
 	 * @api public
 	 */
-	URL.prototype.set = function set(part, value, fn) {
+	function set(part, value, fn) {
 	  var url = this;
 	
 	  switch (part) {
@@ -2580,7 +2580,7 @@
 	 * @returns {String}
 	 * @api public
 	 */
-	URL.prototype.toString = function toString(stringify) {
+	function toString(stringify) {
 	  if (!stringify || 'function' !== typeof stringify) stringify = qs.stringify;
 	
 	  var query
@@ -2605,7 +2605,9 @@
 	  if (url.hash) result += url.hash;
 	
 	  return result;
-	};
+	}
+	
+	URL.prototype = { set: set, toString: toString };
 	
 	//
 	// Expose the URL parser and some additional properties that might be useful for
@@ -2990,7 +2992,7 @@
 	 * Expose `debug()` as the module.
 	 */
 	
-	exports = module.exports = createDebug.debug = createDebug.default = createDebug;
+	exports = module.exports = createDebug.debug = createDebug['default'] = createDebug;
 	exports.coerce = coerce;
 	exports.disable = disable;
 	exports.enable = enable;
@@ -3121,6 +3123,9 @@
 	
 	function enable(namespaces) {
 	  exports.save(namespaces);
+	
+	  exports.names = [];
+	  exports.skips = [];
 	
 	  var split = (namespaces || '').split(/[\s,]+/);
 	  var len = split.length;
@@ -7825,6 +7830,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var React = __webpack_require__(77);
 	var ReactDOM = __webpack_require__(78);
 	var ExperimentContainer_1 = __webpack_require__(79);
@@ -7854,12 +7860,19 @@
 /* 79 */
 /***/ function(module, exports, __webpack_require__) {
 
+	/// <reference path="../../external/gpaas.d.ts" />
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var React = __webpack_require__(77);
 	var seedrandom = __webpack_require__(80);
 	var ExperimentConfigs_1 = __webpack_require__(150);
@@ -7867,20 +7880,23 @@
 	var ExperimentInstructions_1 = __webpack_require__(152);
 	var ExperimentDemographics_1 = __webpack_require__(153);
 	var ExperimentTraining_1 = __webpack_require__(154);
-	var ExperimentTask_1 = __webpack_require__(167);
-	var ExperimentUsability_1 = __webpack_require__(168);
-	var experiment_1 = __webpack_require__(169);
+	var ExperimentTask_1 = __webpack_require__(169);
+	var ExperimentUsability_1 = __webpack_require__(170);
+	var experiment_1 = __webpack_require__(167);
+	var experiment_2 = __webpack_require__(167);
 	var ExperimentContainer = (function (_super) {
 	    __extends(ExperimentContainer, _super);
 	    function ExperimentContainer(props) {
 	        var _this = _super.call(this, props) || this;
 	        _this.generateParams = _this.generateParams.bind(_this);
 	        _this.updateConfig = _this.updateConfig.bind(_this);
+	        _this.setupExperiment = _this.setupExperiment.bind(_this);
 	        _this.submitDemographic = _this.submitDemographic.bind(_this);
 	        _this.start = _this.start.bind(_this);
 	        _this.startTraining = _this.startTraining.bind(_this);
 	        _this.finishTraining = _this.finishTraining.bind(_this);
 	        _this.startTasks = _this.startTasks.bind(_this);
+	        _this.submitTaskAnswer = _this.submitTaskAnswer.bind(_this);
 	        _this.finishTasks = _this.finishTasks.bind(_this);
 	        var betweenSubjectsParams;
 	        if (props.debug) {
@@ -7902,52 +7918,94 @@
 	            };
 	        }
 	        else {
-	            betweenSubjectsParams = experiment_1.getBetweenSubjectsParams();
+	            betweenSubjectsParams = experiment_2.getBetweenSubjectsParams();
+	            // gpaas.logData({
+	            //   type: "CONFIG",
+	            //   blocking: params.blocking,
+	            //   indicator: params.indicator,
+	            //   correspondence: params.correspondence,
+	            //   taskMode: params.taskMode,
+	            //   dataMode: params.dataMode,
+	            //   widgetMode: params.widgetMode,
+	            // });
 	        }
-	        var rng = seedrandom(experiment_1.getUrlParameter("workerId"));
+	        var assignmentId = experiment_2.getUrlParameter("assignmentId");
+	        var rng = seedrandom(experiment_2.getUrlParameter("workerId"));
 	        // const withinSubjectsParams = getWithinSubjectsParams(rng);
-	        var withinSubjectsParams = _this.generateParams();
+	        var assignedEncoding = experiment_1.Encoding.Color;
+	        var withinSubjectsParams = _this.generateParams(assignedEncoding, rng);
 	        _this.state = {
+	            assignmentId: assignmentId,
 	            rng: rng,
 	            betweenSubjectsParams: betweenSubjectsParams,
 	            withinSubjectsParams: withinSubjectsParams,
 	            step: "START",
-	            trainingQuestions: [
-	                "Does any month have more than 80 units sold for the year 2013?",
-	                "Does any month have more than 80 units sold for the year 2013?",
-	                "Does any month have more than 80 units sold for the year 2013?",
-	            ],
 	            trainingWithinSubjectsParams: [
 	                {
-	                    bufferSize: 3 /* SMALL */,
+	                    bufferSize: 1 /* SINGLE */,
 	                    delay: "NONE",
-	                    encoding: 0 /* Position */,
+	                    encoding: assignedEncoding,
+	                    widget: experiment_1.Widget.Facet,
+	                },
+	                {
+	                    bufferSize: 1 /* SINGLE */,
+	                    delay: "UNIFORM_1",
+	                    encoding: assignedEncoding,
+	                    widget: experiment_1.Widget.Facet,
 	                },
 	                {
 	                    bufferSize: 3 /* SMALL */,
 	                    delay: "UNIFORM_3",
-	                    encoding: 0 /* Position */,
+	                    encoding: assignedEncoding,
+	                    widget: experiment_1.Widget.Facet,
 	                },
 	                {
 	                    bufferSize: 6 /* MEDIUM */,
 	                    delay: "UNIFORM_3",
-	                    encoding: 0 /* Position */,
-	                },
-	                {
-	                    bufferSize: 1 /* SINGLE */,
-	                    delay: "UNIFORM_3",
-	                    encoding: 0 /* Position */,
+	                    encoding: assignedEncoding,
+	                    widget: experiment_1.Widget.Facet,
 	                },
 	            ],
-	            bonusReward: 0.80,
-	            taskReward: 0.10,
+	            bonusReward: 1.00,
+	            taskReward: 0.20,
+	            taskNum: 1,
 	        };
 	        return _this;
 	    }
-	    ExperimentContainer.prototype.generateParams = function () {
+	    ExperimentContainer.prototype.setupExperiment = function () {
+	        var debug = this.props.debug;
+	        var _a = this.state, trainingWithinSubjectsParams = _a.trainingWithinSubjectsParams, withinSubjectsParams = _a.withinSubjectsParams;
+	        function clearTask() { }
+	        function finish(opt) {
+	            var submitTo = experiment_2.getUrlParameter("turkSubmitTo");
+	            if (debug || submitTo === "sandbox") {
+	                alert("finished all tasks");
+	            }
+	            else {
+	                opt.submit(); // submit HIT
+	            }
+	        }
+	        function trainingTask() { }
+	        var trainingTasks = trainingWithinSubjectsParams.map(function () { return trainingTask; });
+	        function viewTask() { }
+	        return {
+	            name: "test_experiment",
+	            task: "test_task",
+	            researcher: "jigsaw",
+	            numTasks: withinSubjectsParams.length,
+	            params: {
+	                params: [{ name: "p", type: "UniformChoice", options: [0] }]
+	            },
+	            clearTask: clearTask,
+	            finish: finish,
+	            trainingTasks: trainingTasks,
+	            viewTask: viewTask,
+	        };
+	    };
+	    ExperimentContainer.prototype.generateParams = function (assignedEncoding, rng) {
 	        var bufferSizeOps = [6 /* MEDIUM */, 3 /* SMALL */, 1 /* SINGLE */];
 	        var delayOps = ["NONE", "UNIFORM_1", "UNIFORM_3"];
-	        var encoding = 0 /* Position */;
+	        var encoding = assignedEncoding;
 	        var params = [];
 	        for (var i = 0; i < bufferSizeOps.length; i++) {
 	            for (var j = 0; j < delayOps.length; j++) {
@@ -7958,7 +8016,7 @@
 	                });
 	            }
 	        }
-	        return params;
+	        return experiment_2.shuffle(params, rng);
 	    };
 	    ExperimentContainer.prototype.updateConfig = function (id, value) {
 	        this.setState(function (prevState) {
@@ -7967,33 +8025,27 @@
 	        });
 	    };
 	    ExperimentContainer.prototype.start = function () {
-	        // const e = gpaas.startExperiment(setupExperiment);
-	        // if (e.setupSuccessful) {
-	        //   $('button#submit').click(submitTask);
-	        //   $('button#submit-demographic').click(submitDemographic);
-	        //   $('button#submit-usability').click(submitUsability);
-	        //   $('button#answer').click(showAnswerInput);
-	        //   $('button#next').click(showTask);
-	        //   $('button#continue').click(nextTask);
-	        //   $('button#cancel').click(endExperiment);
-	        //   // e.run();
-	        // }
-	        console.log("experiment start");
-	        this.setState({ step: "DEMOGRAPHIC" });
+	        var e = gpaas.startExperiment(this.setupExperiment);
+	        if (e.setupSuccessful) {
+	            console.log("experiment started succesfully");
+	            this.setState({ step: "DEMOGRAPHIC" });
+	        }
+	        else {
+	            console.log("failed to start experiment");
+	        }
 	    };
 	    ExperimentContainer.prototype.submitDemographic = function (data) {
 	        data = Object.assign({}, data);
 	        data.type = "DEMOGRAPHIC";
 	        console.log(data);
-	        // gpaas.logData(data);
-	        // trainingTask();
+	        gpaas.logData(data);
 	        this.setState({ step: "TRAIN" });
 	    };
 	    ExperimentContainer.prototype.submitInstructions = function (data) {
 	        data = Object.assign({}, data);
 	        data.type = "INSTRUCTIONS";
 	        console.log(data);
-	        // gpaas.logData(data);
+	        gpaas.logData(data);
 	    };
 	    ExperimentContainer.prototype.startTraining = function () {
 	        this.setState({ step: "TRAINING_TASK" });
@@ -8008,34 +8060,42 @@
 	        this.setState({ step: "USABILITY" });
 	    };
 	    ExperimentContainer.prototype.cancelTasks = function () {
-	        // gpaas.cancelTasks();
+	        gpaas.cancelTasks();
+	        console.log("experiment cancelled");
 	    };
 	    ExperimentContainer.prototype.submitUsability = function (data) {
 	        data.type = "USABILITY";
 	        console.log(data);
-	        // gpaas.logData(data);
+	        gpaas.logData(data);
+	        gpaas.nextTask();
 	    };
 	    ExperimentContainer.prototype.submitTrainingAnswer = function (data) {
 	        data.type = "TRAIN";
 	        console.log(data);
-	        // gpaas.logData(data);
+	        gpaas.logData(data);
+	        gpaas.nextTraining();
 	    };
 	    ExperimentContainer.prototype.submitTaskAnswer = function (data) {
+	        var _a = this.state, taskNum = _a.taskNum, withinSubjectsParams = _a.withinSubjectsParams;
 	        data.type = "TASK";
 	        console.log(data);
-	        // gpaas.logData(data);
+	        gpaas.logData(data);
+	        if (taskNum < withinSubjectsParams.length) {
+	            gpaas.nextTask();
+	            this.setState(function (prevState) {
+	                return { taskNum: prevState.taskNum + 1 };
+	            });
+	        }
 	    };
-	    ExperimentContainer.prototype.trainingTask = function () { };
 	    ExperimentContainer.prototype.render = function () {
-	        console.log(this.state);
-	        var _a = this.state, betweenSubjectsParams = _a.betweenSubjectsParams, withinSubjectsParams = _a.withinSubjectsParams, step = _a.step, trainingQuestions = _a.trainingQuestions, trainingWithinSubjectsParams = _a.trainingWithinSubjectsParams, taskReward = _a.taskReward, bonusReward = _a.bonusReward;
+	        var _a = this.state, assignmentId = _a.assignmentId, betweenSubjectsParams = _a.betweenSubjectsParams, withinSubjectsParams = _a.withinSubjectsParams, step = _a.step, trainingWithinSubjectsParams = _a.trainingWithinSubjectsParams, taskReward = _a.taskReward, bonusReward = _a.bonusReward;
 	        var configs = null;
 	        if (this.props.debug) {
 	            configs = (React.createElement(ExperimentConfigs_1.default, { blocking: betweenSubjectsParams.blocking, correspondence: betweenSubjectsParams.correspondence, dataMode: betweenSubjectsParams.dataMode, indicator: betweenSubjectsParams.indicator, taskMode: betweenSubjectsParams.taskMode, updateConfig: this.updateConfig, widgetMode: betweenSubjectsParams.widgetMode }));
 	        }
 	        var screen = null;
 	        if (step === "START") {
-	            screen = (React.createElement(ExperimentInstructions_1.default, { bonusReward: bonusReward, onClick: this.start, taskReward: taskReward }));
+	            screen = (React.createElement(ExperimentInstructions_1.default, { bonusReward: bonusReward, onClick: this.start, taskReward: taskReward, disabled: assignmentId === "ASSIGNMENT_ID_NOT_AVAILABLE" }));
 	        }
 	        else if (step === "DEMOGRAPHIC") {
 	            screen = React.createElement(ExperimentDemographics_1.default, { onClick: this.submitDemographic });
@@ -8044,24 +8104,22 @@
 	            screen = (React.createElement(ExperimentTraining_1.default, { logData: this.submitInstructions, next: this.startTraining, params: trainingWithinSubjectsParams }));
 	        }
 	        else if (step === "TRAINING_TASK") {
-	            screen = (React.createElement(ExperimentTask_1.default, { betweenSubjectsParams: betweenSubjectsParams, isTraining: true, next: this.finishTraining, questions: trainingQuestions, submitAnswer: this.submitTrainingAnswer, withinSubjectsParams: trainingWithinSubjectsParams }));
+	            screen = (React.createElement(ExperimentTask_1.default, { betweenSubjectsParams: betweenSubjectsParams, isTraining: true, next: this.finishTraining, submitAnswer: this.submitTrainingAnswer, withinSubjectsParams: trainingWithinSubjectsParams, taskType: experiment_1.TaskType.EXTREMA }));
 	        }
 	        else if (step === "TASK_INSTRUCTIONS") {
 	            screen = React.createElement(ExperimentTaskInstructions_1.default, { next: this.startTasks });
 	        }
 	        else if (step === "TASK") {
-	            screen = (React.createElement(ExperimentTask_1.default, { betweenSubjectsParams: betweenSubjectsParams, cancel: this.cancelTasks, isTraining: false, next: this.finishTasks, questions: trainingQuestions, submitAnswer: this.submitTaskAnswer, withinSubjectsParams: withinSubjectsParams }));
+	            screen = (React.createElement(ExperimentTask_1.default, { betweenSubjectsParams: betweenSubjectsParams, cancel: this.cancelTasks, isTraining: false, next: this.finishTasks, submitAnswer: this.submitTaskAnswer, taskReward: taskReward, withinSubjectsParams: withinSubjectsParams, taskType: experiment_1.TaskType.EXTREMA }));
 	        }
 	        else if (step === "USABILITY") {
 	            screen = React.createElement(ExperimentUsability_1.default, { onClick: this.submitUsability });
 	        }
 	        return (React.createElement("div", null,
-	            configs,
 	            React.createElement("div", { className: "content-wrapper" }, screen)));
 	    };
 	    return ExperimentContainer;
 	}(React.Component));
-	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = ExperimentContainer;
 
 
@@ -17203,11 +17261,17 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var React = __webpack_require__(77);
 	var ExperimentConfigs = (function (_super) {
 	    __extends(ExperimentConfigs, _super);
@@ -17252,7 +17316,6 @@
 	    };
 	    return ExperimentConfigs;
 	}(React.Component));
-	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = ExperimentConfigs;
 
 
@@ -17261,11 +17324,17 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var React = __webpack_require__(77);
 	var ExperimentTaskInstructions = (function (_super) {
 	    __extends(ExperimentTaskInstructions, _super);
@@ -17275,14 +17344,24 @@
 	    ExperimentTaskInstructions.prototype.render = function () {
 	        return (React.createElement("div", null,
 	            React.createElement("h4", null, "Instructions"),
-	            React.createElement("p", null, "The rest of the tasks for this experiment are similar to the training tasks you just completed, except you will not be shown the correct answer after submission. In addition, the dataset and loading delay will change randomly between each task. This is done intentionally, we want to see how your performance changes in the face of different delays.  There are no constraints on how you could use the interface and we encourage you to explore the interactions as fast as possible."),
+	            React.createElement("p", null,
+	                "The rest of the ",
+	                React.createElement("b", null, "tasks for this experiment will be the same as the one you practiced"),
+	                " during previous training, except you will not be shown the correct answer after submission. The question will be displayed as a reminder. In addition, the ",
+	                React.createElement("b", null, "stock price data and design of the visualization will change randomly between each task"),
+	                ". This is done intentionally, we want to see how your performance changes in the face of different designs. "),
+	            React.createElement("p", null,
+	                "Please ",
+	                React.createElement("b", null, "answer the tasks as quickly and accurately as possible"),
+	                ". Please also try ",
+	                React.createElement("b", null, "not to take breaks during a task"),
+	                " (you may after clicking \"Submit task\" and before clicking \"Continue to next task\"). Our research is highly sensitive to task completion time."),
 	            React.createElement("p", null, "When you are ready, you can click the \"Next\" button below to start working on the rest of the tasks."),
 	            React.createElement("div", { className: "button-wrapper" },
 	                React.createElement("button", { onClick: this.props.next }, "Next"))));
 	    };
 	    return ExperimentTaskInstructions;
 	}(React.Component));
-	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = ExperimentTaskInstructions;
 
 
@@ -17291,11 +17370,17 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var React = __webpack_require__(77);
 	var ExperimentInstructions = (function (_super) {
 	    __extends(ExperimentInstructions, _super);
@@ -17303,29 +17388,28 @@
 	        return _super !== null && _super.apply(this, arguments) || this;
 	    }
 	    ExperimentInstructions.prototype.render = function () {
-	        var _a = this.props, bonusReward = _a.bonusReward, onClick = _a.onClick, taskReward = _a.taskReward;
+	        var _a = this.props, bonusReward = _a.bonusReward, onClick = _a.onClick, taskReward = _a.taskReward, disabled = _a.disabled;
 	        return (React.createElement("div", null,
 	            React.createElement("h4", null, "Interactive Visualization User Study"),
-	            React.createElement("p", null, "This HIT consists of a series of visual analysis tasks. In these tasks, you will be presented with an interactive visualization dashboard of some sales data for an ecommerce website. You will be asked to read values from this visualization, which requires interacting with it to reveal more information."),
+	            React.createElement("p", null, "This HIT consists of a series of visual analysis tasks. In these tasks, you will be presented with an interactive visualization dashboard of some stock price data. You will be asked to read values from this visualization, which requires interacting with it to reveal more information."),
 	            React.createElement("p", null,
-	                "The results of these tasks will be used for a research study on visual perception for interactive visualizations. The purpose of the study is to understand and measure how accurately and quickly humans can perform tasks in interactive visualization settings, and the summaries may be included in future research publications. A primary goal of this work is to help us design better interfaces for a variety of interactive tasks and conditions. You may view our ",
+	                "The results of these tasks will be used for a research study on visual perception for interactive visualizations. The purpose of the study is to inform the design of interfaces for visual analytics tasks when there are delays. You may view our ",
 	                React.createElement("a", { href: "./policy.html", target: "_blank" }, "privacy policy"),
-	                " for more information."),
+	                " for more information. Your anonymized data may be used for publication."),
 	            React.createElement("p", null,
 	                "Your participation in this study is voluntary, and you will receive a $",
 	                taskReward.toFixed(2),
-	                " reward for each task completed. You will be able to keep track of your accumulated reward throughout the duration of this HIT. After completing all of the tasks, you will receive a $",
+	                " reward for each task completed. After completing all of the tasks, you will receive a $",
 	                bonusReward.toFixed(2),
 	                " completion bonus reward. You ",
 	                React.createElement("b", null, "must"),
-	                " complete all the tasks in this HIT to receive the completion bonus. If you do not wish to complete all the tasks, you can press the \"Finish and claim current reward\" button to exit this HIT and be paid your accumulated reward. You will only be paid once you complete all the tasks or click the finish button."),
+	                " complete all the tasks in this HIT to receive the completion bonus. If you do not wish to complete all the tasks, you can press the \"Finish and claim current reward\" button to exit this HIT and be paid your accumulated reward. You will only be paid once you complete all the tasks or click the finish button, given that the tasks are done with reasonable effort (i.e. no completely arbitrary guessing)."),
 	            React.createElement("p", null, "If you are ready to begin, please click the button below."),
 	            React.createElement("div", { className: "button-wrapper" },
-	                React.createElement("button", { onClick: onClick }, "I understand, and consent to participate"))));
+	                React.createElement("button", { onClick: onClick, disabled: disabled }, "I understand, and consent to participate"))));
 	    };
 	    return ExperimentInstructions;
 	}(React.Component));
-	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = ExperimentInstructions;
 
 
@@ -17334,11 +17418,17 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var React = __webpack_require__(77);
 	var ExperimentDemographics = (function (_super) {
 	    __extends(ExperimentDemographics, _super);
@@ -17367,7 +17457,7 @@
 	        var _a = this.state, age = _a.age, computer = _a.computer, education = _a.education, gender = _a.gender, occupation = _a.occupation, viz = _a.viz;
 	        return (React.createElement("div", null,
 	            React.createElement("h4", null, "Demographic Survey"),
-	            React.createElement("p", null, "Thank you for your agreement to participate in our research study. Before proceeding with the tasks, we ask you to fill out this brief demographic survey to better understand the background of our participants. Completion of this survey is optional, and you may proceed at any time by clicking the \"Continue\" button below. Your individual response to this survey will not be reported, but rather aggregated together with the rest of the participant population."),
+	            React.createElement("p", null, "Thank you for participating in our research study. Before proceeding, we ask you to fill out this brief survey to help us better understand the background of our participants. Completion of this survey is optional, and you may proceed at any time by clicking the \"Continue\" button below. Your individual response to this survey will not be reported, but rather anonymized and aggregated together with the rest of the participant population."),
 	            React.createElement("label", { htmlFor: "age" }, "Your Age:"),
 	            React.createElement("br", null),
 	            React.createElement("input", { type: "text", id: "age", name: "age", value: age, onChange: this.onChange }),
@@ -17440,7 +17530,6 @@
 	    };
 	    return ExperimentDemographics;
 	}(React.Component));
-	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = ExperimentDemographics;
 
 
@@ -17449,13 +17538,20 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var React = __webpack_require__(77);
 	var MergedContainer_1 = __webpack_require__(155);
+	var experiment_1 = __webpack_require__(167);
 	var ExperimentTraining = (function (_super) {
 	    __extends(ExperimentTraining, _super);
 	    function ExperimentTraining(props) {
@@ -17464,7 +17560,6 @@
 	        _this.state = {
 	            startTime: Date.now(),
 	            step: 0,
-	            widget: 0 /* Facet */,
 	        };
 	        return _this;
 	    }
@@ -17473,11 +17568,14 @@
 	        var _b = this.state, startTime = _b.startTime, step = _b.step;
 	        var total = params.length;
 	        logData({
-	            taskNum: step,
+	            bufferSize: params[step].bufferSize,
 	            delay: params[step].delay,
-	            startTime: startTime,
-	            endTime: Date.now(),
+	            encoding: experiment_1.Encoding[params[step].encoding],
 	            eventLog: this.viz.state.eventLog,
+	            taskNum: step,
+	            vizEndTime: Date.now(),
+	            vizStartTime: startTime,
+	            widget: experiment_1.Widget[params[step].widget],
 	        });
 	        if (step < total - 1) {
 	            this.setState(function (prevState) {
@@ -17494,37 +17592,48 @@
 	    ExperimentTraining.prototype.render = function () {
 	        var _this = this;
 	        var params = this.props.params;
-	        var _a = this.state, step = _a.step, widget = _a.widget;
+	        var step = this.state.step;
 	        var instructions;
 	        if (step === 0) {
 	            instructions = (React.createElement("div", null,
 	                React.createElement("h4", null, "Instructions Part 1"),
-	                React.createElement("p", null, "In these tasks you will be asked to read sales data by interacting with a data visualization like the one shown below. You can hover over any of the months on the left, which will filter the data by the month selected. The corresponding bar chart will update accordingly. The bar chart shows sales for the years 2011-2015 for the given month selected. The horizontal axis displays the years, and the vertical axis displays the units sold in the selected month for that year. Using this interactive visualization, you will try to answer an associated question given in the tasks."),
-	                React.createElement("p", null, "Spend some time familiarizing yourself with the visualization below. The data shown here will be different from those shown in the tasks, however the visualization will remain the same. Make sure you understand how to read the data, and interact with the visualization before proceeding."),
-	                React.createElement("p", null, "When you are ready, you can click the \"Next\" button below to interact with another visualization where we introduce loading delay.")));
+	                React.createElement("p", null, "In these tasks you will be asked to read stock price data by interacting with a data visualization like the one shown below. You can hover over any of the months on the left, which will filter the data by the month selected. The corresponding chart will update accordingly. The chart shows the company's stock price for the years 2008-2012 for the given month selected. The horizontal axis displays the years, and the vertical axis displays the price in the selected month for that year."),
+	                React.createElement("p", null,
+	                    React.createElement("b", null, "Spend some time familiarizing yourself with the visualization below"),
+	                    ". The data shown here will be different from those shown in the tasks, however the visualization will remain the same. Make sure you understand how to read the data and interact with the visualization before proceeding."),
+	                React.createElement("p", null, "When you are finished, please click the \"Next\" button below.")));
 	        }
 	        else if (step === 1) {
 	            instructions = (React.createElement("div", null,
 	                React.createElement("h4", null, "Instructions Part 2"),
 	                React.createElement("p", null,
-	                    "Now we have increased the loading delay compared to the previous visualization you saw, and the bar charts might ",
-	                    React.createElement("b", null, "not appear in the order that you hover over the months"),
-	                    ". The data being shown here is exactly the same as in the previous visualization. Spend some time interacting with the visualization below to familiarize yourself with the effects of the longer and varying delays."),
-	                React.createElement("p", null, "When you are ready, you can click the \"Next\" button below to interact with another visualization where we change the interface slightly.")));
+	                    "Now we have ",
+	                    React.createElement("b", null, "increased the loading delay"),
+	                    " compared to the previous visualization you saw, but the data is exactly the same. Spend some time interacting with the visualization below to familiarize yourself with the effects of the longer and varying delays."),
+	                React.createElement("p", null, "When you are finished, please click the \"Next\" button below.")));
 	        }
 	        else if (step === 2) {
 	            instructions = (React.createElement("div", null,
 	                React.createElement("h4", null, "Instructions Part 3"),
-	                React.createElement("p", null, "Now we have increased the number of interaction results you can see at the same time. The data being shown here is exactly the same as in the previous visualization. Spend some time interacting with the visualization below to familiarize yourself with a different interface."),
-	                React.createElement("p", null, "When you are ready, you can click the \"Next\" button below to interact with another visualization where we decrease the number of interaction results you can see.")));
+	                React.createElement("p", null,
+	                    "Now we have ",
+	                    React.createElement("b", null, "increased the amount of data you can view at once"),
+	                    " from one month to three months."),
+	                React.createElement("p", null, "When you are ready, please click the \"Next\" button below.")));
 	        }
 	        else if (step === 3) {
 	            instructions = (React.createElement("div", null,
 	                React.createElement("h4", null, "Instructions Part 4"),
-	                React.createElement("p", null, "Now you can only see the result of your most recent interaction. The data being shown here is exactly the same as in the previous visualization. Please familarize with this design as well."),
-	                React.createElement("p", null, "When you are ready, you can click the \"Next\" button below to start working on a set of training tasks before completing the rest of the tasks. In the training tasks, you will be shown the correct answer after submitting. In some of the training tasks, there will be an intentional loading delay of the visualization, and the delay or the design will change between tasks.")));
+	                React.createElement("p", null,
+	                    "Now we have ",
+	                    React.createElement("b", null, "increased the amount of data you can view at once"),
+	                    " from three months to six months."),
+	                React.createElement("p", null,
+	                    "When you are ready, you can click the \"Next\" button below to start working on a set of training tasks before completing the rest of the tasks. In the training tasks, you will be shown the correct answer after submission. ",
+	                    React.createElement("b", null, "Both the stock price data and the design of the visualization may change between tasks"),
+	                    ".")));
 	        }
-	        var viz = (React.createElement(MergedContainer_1.default, { bufferSize: params[step].bufferSize, delay: params[step].delay, encoding: params[step].encoding, ref: function (v) { return _this.viz = v; }, taskNum: step, widget: widget, disabled: false }));
+	        var viz = (React.createElement(MergedContainer_1.default, { bufferSize: params[step].bufferSize, delay: params[step].delay, encoding: params[step].encoding, ref: function (v) { return _this.viz = v; }, taskNum: step, widget: params[step].widget, disabled: false, taskMode: 0 /* INSTRUCTIONS */, key: step }));
 	        return (React.createElement("div", null,
 	            instructions,
 	            viz,
@@ -17533,7 +17642,6 @@
 	    };
 	    return ExperimentTraining;
 	}(React.Component));
-	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = ExperimentTraining;
 
 
@@ -17542,24 +17650,25 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var React = __webpack_require__(77);
 	var Chart_1 = __webpack_require__(156);
-	var WidgetFacet_1 = __webpack_require__(162);
+	var WidgetFacet_1 = __webpack_require__(163);
 	var WidgetBrush_1 = __webpack_require__(164);
 	var MultiplesChart_1 = __webpack_require__(165);
 	var data_1 = __webpack_require__(166);
-	var initialState = {
-	    datasets: {},
-	    facets: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-	    selected: [],
-	    eventLog: [],
-	    currentItxId: 0,
-	};
+	var experiment_1 = __webpack_require__(167);
+	var utils_1 = __webpack_require__(159);
 	/**
 	 * Stateful container for all the interaction elements.
 	 */
@@ -17569,13 +17678,20 @@
 	        var _this = _super.call(this, props) || this;
 	        _this.updateSelection = _this.updateSelection.bind(_this);
 	        _this.processResponse = _this.processResponse.bind(_this);
-	        _this.state = initialState;
+	        _this.state = {
+	            datasets: {},
+	            facets: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+	            selected: [],
+	            eventLog: [],
+	            currentItxId: 0,
+	        };
 	        return _this;
 	    }
-	    // clear out the old state whenever there is an update to vis configuaration
-	    // in this case, task change
-	    MergedContainer.prototype.componentWillReceiveProps = function () {
-	        this.setState(initialState);
+	    MergedContainer.prototype.componentDidMount = function () {
+	        this._isMounted = true;
+	    };
+	    MergedContainer.prototype.componentWillUnmount = function () {
+	        this._isMounted = false;
 	    };
 	    /**
 	     * Updates state when a new interaction occurs by maintaining an LRU cache
@@ -17618,24 +17734,28 @@
 	     */
 	    MergedContainer.prototype.processResponse = function (response) {
 	        var _this = this;
-	        var taskNum = response.taskNum, selection = response.selection, data = response.data, itxid = response.itxid;
-	        this.setState(function (prevState) {
-	            var eventLog = prevState.eventLog.slice();
-	            eventLog.push({
-	                event: "render",
-	                widget: _this.props.widget,
-	                taskNum: taskNum,
-	                selection: selection,
-	                itxid: itxid,
-	                ts: Date.now()
+	        if (this._isMounted) {
+	            var taskNum_1 = response.taskNum, selection_1 = response.selection, data_2 = response.data, itxid_1 = response.itxid;
+	            this.setState(function (prevState) {
+	                var eventLog = prevState.eventLog.slice();
+	                var logRecord = {
+	                    event: "render",
+	                    widget: _this.props.widget,
+	                    taskNum: taskNum_1,
+	                    selection: selection_1,
+	                    itxid: itxid_1,
+	                    ts: Date.now()
+	                };
+	                eventLog.push(logRecord);
+	                if (prevState.selected.indexOf(selection_1) > -1) {
+	                    var datasets = Object.assign({}, prevState.datasets);
+	                    datasets[selection_1] = data_2;
+	                    return { datasets: datasets, eventLog: eventLog };
+	                }
+	                logRecord.event = "discard";
+	                return { eventLog: eventLog };
 	            });
-	            if (prevState.selected.indexOf(selection) > -1) {
-	                var datasets = Object.assign({}, prevState.datasets);
-	                datasets[selection] = data;
-	                return { datasets: datasets, eventLog: eventLog };
-	            }
-	            return { eventLog: eventLog };
-	        });
+	        }
 	    };
 	    /**
 	     * Handles updates from widget. Updates selected cache state, sends
@@ -17646,56 +17766,68 @@
 	     * @param {string} selection
 	     */
 	    MergedContainer.prototype.updateSelection = function (id, selection) {
-	        var _this = this;
-	        if (this.props.disabled) {
+	        var _a = this.props, delay = _a.delay, disabled = _a.disabled, taskMode = _a.taskMode, taskNum = _a.taskNum, widget = _a.widget;
+	        var _b = this.state, currentItxId = _b.currentItxId, datasets = _b.datasets, selected = _b.selected;
+	        if (disabled) {
 	            // no-op
 	            return;
 	        }
-	        var isSelected = (this.state.selected.indexOf(selection) > -1);
+	        var isSelected = (selected.indexOf(selection) > -1);
 	        this.updateSelectedState(selection);
-	        if (!isSelected) {
-	            var itxid_1 = this.assignItxId();
-	            this.setState(function (prevState) {
-	                var eventLog = prevState.eventLog.slice();
-	                eventLog.push({
-	                    event: "interaction",
-	                    widget: _this.props.widget,
-	                    taskNum: _this.props.taskNum,
-	                    selection: selection,
-	                    ts: Date.now(),
-	                    itxid: itxid_1
-	                });
-	                return { eventLog: eventLog };
+	        var itxid = currentItxId + 1;
+	        this.appendNewInteraction(selection);
+	        if (isSelected) {
+	            // item exists in cache, append render event to log without fetching data
+	            this.processResponse({
+	                taskNum: taskNum,
+	                selection: selection,
+	                data: datasets[selection],
+	                itxid: itxid,
 	            });
-	            data_1.getData(id, this.props.widget, this.props.taskNum, selection, this.props.delay, itxid_1).then(this.processResponse);
+	        }
+	        else {
+	            data_1.getData(id, widget, taskNum, selection, delay, itxid, taskMode)
+	                .then(this.processResponse);
 	        }
 	    };
 	    /**
-	     * Generates a unique ID for this widget that's monotonically increasing
+	     * Generates a unique ixn ID for this widget that's monotonically increasing,
+	     * and appends a new log record to the event log
 	     */
-	    MergedContainer.prototype.assignItxId = function () {
+	    MergedContainer.prototype.appendNewInteraction = function (selection) {
+	        var _this = this;
 	        this.setState(function (prevState) {
-	            return { currentItxId: prevState.currentItxId + 1 };
+	            var eventLog = prevState.eventLog.slice();
+	            var currentItxId = prevState.currentItxId + 1;
+	            eventLog.push({
+	                event: "interaction",
+	                widget: _this.props.widget,
+	                taskNum: _this.props.taskNum,
+	                selection: selection,
+	                ts: Date.now(),
+	                itxid: currentItxId,
+	            });
+	            return { currentItxId: currentItxId, eventLog: eventLog };
 	        });
-	        return this.state.currentItxId;
 	    };
 	    MergedContainer.prototype.render = function () {
 	        var bufferSize = this.props.bufferSize;
 	        var _a = this.state, multipleHeight = _a.multipleHeight, datasets = _a.datasets, multipleWidth = _a.multipleWidth, selected = _a.selected, currentItxId = _a.currentItxId;
+	        var colorScale = utils_1.ColorScales["BLUE"](bufferSize, currentItxId);
 	        var chart;
 	        var widget;
 	        var widgetId = "widget-" + this.props.taskNum.toString();
-	        if (this.props.encoding === 1 /* Color */) {
-	            chart = React.createElement(Chart_1.default, { bufferSize: this.props.bufferSize, datasets: datasets, selected: selected });
+	        if (this.props.encoding === experiment_1.Encoding.Color) {
+	            chart = React.createElement(Chart_1.default, { bufferSize: this.props.bufferSize, datasets: datasets, selected: selected, xDomain: [2008, 2012] /* hardcoded */, yDomain: [0, 100] /* hardcoded */, colorScale: colorScale });
 	        }
 	        else {
-	            chart = React.createElement(MultiplesChart_1.default, { bufferSize: bufferSize, datasets: datasets, multipleHeight: multipleHeight, multipleWidth: multipleWidth, selected: selected, setDomain: false, ordered: true, evictedIdx: currentItxId % bufferSize });
+	            chart = React.createElement(MultiplesChart_1.default, { bufferSize: bufferSize, datasets: datasets, multipleHeight: multipleHeight, multipleWidth: multipleWidth, selected: selected, setDomain: false, ordered: true, evictedIdx: currentItxId % bufferSize, colorScale: colorScale });
 	        }
-	        if (this.props.widget === 0 /* Facet */) {
-	            widget = React.createElement(WidgetFacet_1.default, { id: widgetId, bufferSize: bufferSize, facets: this.state.facets, datasets: datasets, selected: selected, updateSelection: this.updateSelection });
+	        if (this.props.widget === experiment_1.Widget.Facet) {
+	            widget = React.createElement(WidgetFacet_1.default, { id: widgetId, bufferSize: bufferSize, facets: this.state.facets, datasets: datasets, selected: selected, updateSelection: this.updateSelection, colorScale: colorScale });
 	        }
 	        else {
-	            widget = React.createElement(WidgetBrush_1.default, { id: widgetId, bufferSize: bufferSize, datasets: datasets, selected: selected, updateSelection: this.updateSelection, width: multipleWidth * bufferSize });
+	            widget = React.createElement(WidgetBrush_1.default, { id: widgetId, bufferSize: bufferSize, datasets: datasets, selected: selected, updateSelection: this.updateSelection, width: multipleWidth * bufferSize, colorScale: colorScale });
 	        }
 	        return (React.createElement("div", null,
 	            widget,
@@ -17703,7 +17835,6 @@
 	    };
 	    return MergedContainer;
 	}(React.Component));
-	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = MergedContainer;
 
 
@@ -17712,14 +17843,20 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var d3 = __webpack_require__(157);
 	var React = __webpack_require__(77);
-	var utils_1 = __webpack_require__(158);
+	var Indicator_1 = __webpack_require__(158);
 	/**
 	 * Represents an SVG chart. The chart uses the selected data from props to
 	 * render the appropriate path(s). d3 is used to generate axes and scales.
@@ -17730,10 +17867,10 @@
 	        return _super !== null && _super.apply(this, arguments) || this;
 	    }
 	    Chart.prototype.render = function () {
-	        var _a = this.props, bufferSize = _a.bufferSize, datasets = _a.datasets, selected = _a.selected, color = _a.color, height = _a.height, marginBottom = _a.marginBottom, marginLeft = _a.marginLeft, marginRight = _a.marginRight, marginTop = _a.marginTop, width = _a.width;
+	        var _a = this.props, bufferSize = _a.bufferSize, datasets = _a.datasets, selected = _a.selected, colorOverride = _a.colorOverride, height = _a.height, marginBottom = _a.marginBottom, marginLeft = _a.marginLeft, marginRight = _a.marginRight, marginTop = _a.marginTop, width = _a.width, colorScale = _a.colorScale;
 	        var _b = this.props, xDomain = _b.xDomain, yDomain = _b.yDomain;
 	        var innerWidth = width - marginLeft - marginRight;
-	        var innerHeight = height - marginTop - marginRight;
+	        var innerHeight = height - marginTop - marginBottom;
 	        // set the scales
 	        if (!xDomain) {
 	            xDomain = [
@@ -17757,28 +17894,34 @@
 	        var axisBottom = d3.axisBottom(x)
 	            .ticks(3, "d");
 	        var axisLeft = d3.axisLeft(y)
-	            .ticks(5);
+	            .ticks(10);
 	        // set the color(s)
-	        var colorScale;
-	        if (bufferSize === 1) {
-	            colorScale = function (i) { return color; };
-	        }
-	        else {
-	            colorScale = utils_1.ColorScales[color](bufferSize);
-	        }
+	        // if (colorOverride) {
+	        //   colorScale = () => color;
+	        // } else {
+	        //   colorScale = colorScale; // ColorScales[color](bufferSize);
+	        // }
 	        // path generator
 	        var line = d3.line()
 	            .x(function (d) { return x(d.x); })
 	            .y(function (d) { return y(d.y); });
+	        // loading indicator(s)
+	        var indicators = [];
+	        // guide marks
+	        var guides = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(function (d) {
+	            return (React.createElement("line", { key: d, x1: 0, x2: innerWidth, y1: y(d), y2: y(d), stroke: "rgb(189, 189, 189)" }));
+	        });
 	        // map selected data to SVG path/dots
 	        var paths = [];
 	        var _loop_1 = function (i) {
 	            var s = selected[i];
-	            if (datasets[s] === undefined)
-	                return "continue"; // if undefined, then the data is still being requested
+	            if (datasets[s] === undefined) {
+	                indicators.push(React.createElement(Indicator_1.default, { key: "ind_" + i, loading: true }));
+	                return "continue";
+	            }
 	            var c = colorScale(selected.length - 1 - i);
 	            // path
-	            paths.push(React.createElement("path", { key: s + "_line", fill: "none", stroke: c, strokeWidth: "1.5", d: line(datasets[s]) }));
+	            paths.push(React.createElement("path", { key: s + "_line", fill: "none", stroke: c, strokeWidth: "2", d: line(datasets[s]) }));
 	            // dots
 	            Array.prototype.push.apply(paths, datasets[s].map(function (d, i) {
 	                return React.createElement("circle", { key: s + "_" + i + "_dot", r: "2.5", cx: x(d.x), cy: y(d.y), fill: c });
@@ -17789,30 +17932,33 @@
 	        }
 	        var label;
 	        if (this.props.showLabel) {
-	            label = React.createElement("text", { x: innerWidth / 2, y: "0", fontSize: "15px", fill: color }, selected[0]);
+	            label = (React.createElement("text", { className: "chart-label", x: innerWidth / 2, y: -8, textAnchor: "middle" }, selected[0]));
 	        }
 	        return (React.createElement("div", { className: "chart-wrapper inline-block" },
 	            React.createElement("svg", { width: width, height: height },
 	                React.createElement("g", { transform: "translate(" + marginLeft + "," + marginTop + ")" },
+	                    guides,
 	                    React.createElement("g", { ref: function (g) { return d3.select(g).call(axisBottom); }, transform: "translate(0," + innerHeight + ")" }),
 	                    React.createElement("g", { ref: function (g) { return d3.select(g).call(axisLeft); } }),
 	                    paths,
 	                    label,
-	                    this.props.children))));
+	                    this.props.children),
+	                React.createElement("text", { className: "chart-label", y: height - 5, x: (innerWidth / 2) + marginLeft, textAnchor: "middle" }, "Year"),
+	                React.createElement("text", { className: "chart-label", x: -(innerHeight / 2) - marginTop, y: 15, transform: "rotate(-90)", textAnchor: "middle" }, "Stock price")),
+	            indicators));
 	    };
 	    return Chart;
 	}(React.Component));
 	Chart.defaultProps = {
-	    color: "BLUE",
+	    colorOverride: false,
 	    height: 300,
-	    marginBottom: 30,
-	    marginLeft: 40,
+	    marginBottom: 40,
+	    marginLeft: 45,
 	    marginRight: 20,
 	    marginTop: 20,
 	    width: 400,
 	    showLabel: false,
 	};
-	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = Chart;
 
 
@@ -17827,11 +17973,51 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var d3ScaleChromatic = __webpack_require__(159);
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
+	var React = __webpack_require__(77);
+	/**
+	 * Represents a progress indicator when the UI is performing some
+	 * asynchronous processing.
+	 */
+	var Indicator = (function (_super) {
+	    __extends(Indicator, _super);
+	    function Indicator() {
+	        return _super !== null && _super.apply(this, arguments) || this;
+	    }
+	    Indicator.prototype.render = function () {
+	        if (!this.props.loading) {
+	            return null;
+	        }
+	        return React.createElement("div", { className: "indicator inline-block" });
+	    };
+	    return Indicator;
+	}(React.Component));
+	exports.default = Indicator;
+
+
+/***/ },
+/* 159 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	Object.defineProperty(exports, "__esModule", { value: true });
+	var d3ScaleChromatic = __webpack_require__(160);
+	var d3 = __webpack_require__(157);
 	/**
 	 * Generates the color scales used for differentiating recently used
 	 * results on screen.
 	 * @param {number} bufferSize
+	 * @param {number} interactionId?
 	 */
 	exports.ColorScales = {
 	    BLUE: function (bufferSize) {
@@ -17839,8 +18025,25 @@
 	            return function () { return d3ScaleChromatic.interpolateBlues(0.8); };
 	        }
 	        return function (i) {
-	            return d3ScaleChromatic.schemeDark2[i];
-	            //d3ScaleChromatic.interpolateBlues(0.8 - 0.6 * i / (bufferSize - 1));
+	            return d3ScaleChromatic.interpolateBlues(0.8 - 0.6 * i / (bufferSize - 1));
+	        };
+	    },
+	    MULTI: function (bufferSize, interactionId) {
+	        if (bufferSize === 1) {
+	            return function () { return d3ScaleChromatic.interpolateBlues(0.8); };
+	        }
+	        return function (i) {
+	            // this offset ensures that the color doesn't move around
+	            var offset = (i - interactionId + bufferSize - 1) % bufferSize + bufferSize - 1;
+	            // since the 20 contains pairs of close ones, use the even ones when possible.
+	            if (offset < 10) {
+	                offset *= 2; // use even so we don't have similar colors
+	            }
+	            else {
+	                // use odd colors
+	                (offset - 9) * 2 - 1;
+	            }
+	            return d3.schemeCategory20[offset];
 	        };
 	    },
 	};
@@ -17864,14 +18067,14 @@
 
 
 /***/ },
-/* 159 */
+/* 160 */
 /***/ function(module, exports, __webpack_require__) {
 
-	// https://d3js.org/d3-scale-chromatic/ Version 1.1.0. Copyright 2016 Mike Bostock.
+	// https://d3js.org/d3-scale-chromatic/ Version 1.1.1. Copyright 2017 Mike Bostock.
 	(function (global, factory) {
-	   true ? factory(exports, __webpack_require__(160)) :
-	  typeof define === 'function' && define.amd ? define(['exports', 'd3-interpolate'], factory) :
-	  (factory((global.d3 = global.d3 || {}),global.d3));
+		 true ? factory(exports, __webpack_require__(161)) :
+		typeof define === 'function' && define.amd ? define(['exports', 'd3-interpolate'], factory) :
+		(factory((global.d3 = global.d3 || {}),global.d3));
 	}(this, (function (exports,d3Interpolate) { 'use strict';
 	
 	var colors = function(specifier) {
@@ -17943,15 +18146,15 @@
 	var PiYG = ramp(scheme$2);
 	
 	var scheme$3 = new Array(3).concat(
-	  "f1a340f7f7f7998ec3",
-	  "e66101fdb863b2abd25e3c99",
-	  "e66101fdb863f7f7f7b2abd25e3c99",
-	  "b35806f1a340fee0b6d8daeb998ec3542788",
-	  "b35806f1a340fee0b6f7f7f7d8daeb998ec3542788",
-	  "b35806e08214fdb863fee0b6d8daebb2abd28073ac542788",
-	  "b35806e08214fdb863fee0b6f7f7f7d8daebb2abd28073ac542788",
-	  "7f3b08b35806e08214fdb863fee0b6d8daebb2abd28073ac5427882d004b",
-	  "7f3b08b35806e08214fdb863fee0b6f7f7f7d8daebb2abd28073ac5427882d004b"
+	  "998ec3f7f7f7f1a340",
+	  "5e3c99b2abd2fdb863e66101",
+	  "5e3c99b2abd2f7f7f7fdb863e66101",
+	  "542788998ec3d8daebfee0b6f1a340b35806",
+	  "542788998ec3d8daebf7f7f7fee0b6f1a340b35806",
+	  "5427888073acb2abd2d8daebfee0b6fdb863e08214b35806",
+	  "5427888073acb2abd2d8daebf7f7f7fee0b6fdb863e08214b35806",
+	  "2d004b5427888073acb2abd2d8daebfee0b6fdb863e08214b358067f3b08",
+	  "2d004b5427888073acb2abd2d8daebf7f7f7fee0b6fdb863e08214b358067f3b08"
 	).map(colors);
 	
 	var PuOr = ramp(scheme$3);
@@ -18311,12 +18514,12 @@
 
 
 /***/ },
-/* 160 */
+/* 161 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://d3js.org/d3-interpolate/ Version 1.1.3. Copyright 2017 Mike Bostock.
 	(function (global, factory) {
-	   true ? factory(exports, __webpack_require__(161)) :
+	   true ? factory(exports, __webpack_require__(162)) :
 	  typeof define === 'function' && define.amd ? define(['exports', 'd3-color'], factory) :
 	  (factory((global.d3 = global.d3 || {}),global.d3));
 	}(this, (function (exports,d3Color) { 'use strict';
@@ -18862,7 +19065,7 @@
 
 
 /***/ },
-/* 161 */
+/* 162 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://d3js.org/d3-color/ Version 1.0.2. Copyright 2016 Mike Bostock.
@@ -19391,18 +19594,23 @@
 
 
 /***/ },
-/* 162 */
+/* 163 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var React = __webpack_require__(77);
-	var Indicator_1 = __webpack_require__(163);
-	var utils_1 = __webpack_require__(158);
+	var Indicator_1 = __webpack_require__(158);
 	/**
 	 * Represents an interaction widget. The widget calls the updateSelection
 	 * property method when hovering over a list item.
@@ -19413,8 +19621,7 @@
 	        return _super !== null && _super.apply(this, arguments) || this;
 	    }
 	    WidgetFacet.prototype.render = function () {
-	        var _a = this.props, id = _a.id, bufferSize = _a.bufferSize, color = _a.color, datasets = _a.datasets, facets = _a.facets, selected = _a.selected, showIndicator = _a.showIndicator, updateSelection = _a.updateSelection;
-	        var colorScale = utils_1.ColorScales[color](bufferSize);
+	        var _a = this.props, id = _a.id, bufferSize = _a.bufferSize, datasets = _a.datasets, facets = _a.facets, selected = _a.selected, showIndicator = _a.showIndicator, updateSelection = _a.updateSelection, colorScale = _a.colorScale;
 	        var loading = showIndicator &&
 	            selected.some(function (s) { return datasets[s] === undefined; });
 	        // map facet strings to DOM list items
@@ -19435,43 +19642,9 @@
 	    return WidgetFacet;
 	}(React.Component));
 	WidgetFacet.defaultProps = {
-	    color: "BLUE",
 	    showIndicator: false
 	};
-	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = WidgetFacet;
-
-
-/***/ },
-/* 163 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var React = __webpack_require__(77);
-	/**
-	 * Represents a progress indicator when the UI is performing some
-	 * asynchronous processing.
-	 */
-	var Indicator = (function (_super) {
-	    __extends(Indicator, _super);
-	    function Indicator() {
-	        return _super !== null && _super.apply(this, arguments) || this;
-	    }
-	    Indicator.prototype.render = function () {
-	        if (!this.props.loading) {
-	            return null;
-	        }
-	        return React.createElement("div", { className: "indicator inline-block" });
-	    };
-	    return Indicator;
-	}(React.Component));
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = Indicator;
 
 
 /***/ },
@@ -19479,15 +19652,20 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var d3 = __webpack_require__(157);
 	var React = __webpack_require__(77);
 	var Chart_1 = __webpack_require__(156);
-	var utils_1 = __webpack_require__(158);
 	/**
 	 * Represents an interactive chart widget. The chart uses the data from props
 	 * to render the appropriate dot(s). d3 is used to generate axes and scales.
@@ -19501,7 +19679,7 @@
 	        return _super !== null && _super.apply(this, arguments) || this;
 	    }
 	    WidgetBrush.prototype.render = function () {
-	        var _a = this.props, bufferSize = _a.bufferSize, color = _a.color, datasets = _a.datasets, height = _a.height, id = _a.id, marginBottom = _a.marginBottom, marginLeft = _a.marginLeft, marginRight = _a.marginRight, marginTop = _a.marginTop, selected = _a.selected, selectedColor = _a.selectedColor, updateSelection = _a.updateSelection, width = _a.width;
+	        var _a = this.props, bufferSize = _a.bufferSize, datasets = _a.datasets, height = _a.height, id = _a.id, marginBottom = _a.marginBottom, marginLeft = _a.marginLeft, marginRight = _a.marginRight, marginTop = _a.marginTop, selected = _a.selected, updateSelection = _a.updateSelection, width = _a.width, colorScale = _a.colorScale;
 	        var sel = selected.map(function (s) { return JSON.parse(s); });
 	        var innerWidth = width - marginLeft - marginRight;
 	        var innerHeight = height - marginTop - marginRight;
@@ -19516,7 +19694,6 @@
 	        var y = d3.scaleLinear()
 	            .domain([ymin, ymax])
 	            .rangeRound([innerHeight, 0]);
-	        var colorScale = utils_1.ColorScales[selectedColor](bufferSize);
 	        // generate a brush that interacts with the chart
 	        var brush = d3.brushX()
 	            .extent([[0, 0], [innerWidth, innerHeight]])
@@ -19538,23 +19715,20 @@
 	            var cStr = newC.toString();
 	            rects.push(React.createElement("rect", { key: i, x: xPt, y: "0", width: w, height: innerHeight, fill: cStr, stroke: "#666", shapeRendering: "crispEdges" }));
 	        }
-	        return (React.createElement(Chart_1.default, { bufferSize: 1, color: color, datasets: datasets, height: height, marginBottom: marginBottom, marginLeft: marginLeft, marginRight: marginRight, marginTop: marginTop, selected: ["all"], width: width },
+	        return (React.createElement(Chart_1.default, { bufferSize: 1, datasets: datasets, height: height, marginBottom: marginBottom, marginLeft: marginLeft, marginRight: marginRight, marginTop: marginTop, selected: ["all"], width: width, colorScale: colorScale },
 	            rects,
 	            React.createElement("g", { ref: function (g) { return d3.select(g).call(brush); } })));
 	    };
 	    return WidgetBrush;
 	}(React.Component));
 	WidgetBrush.defaultProps = {
-	    color: "green",
 	    height: 60,
 	    marginBottom: 30,
 	    marginLeft: 40,
 	    marginRight: 20,
 	    marginTop: 10,
-	    selectedColor: "BLUE",
 	    width: 400,
 	};
-	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = WidgetBrush;
 
 
@@ -19563,15 +19737,20 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var React = __webpack_require__(77);
 	var Chart_1 = __webpack_require__(156);
-	var Indicator_1 = __webpack_require__(163);
-	var utils_1 = __webpack_require__(158);
+	var Indicator_1 = __webpack_require__(158);
 	/**
 	 * Represents a small multiples chart visualization. The charts render the
 	 * selected data from props such that each chart renders only one of the
@@ -19583,8 +19762,7 @@
 	        return _super !== null && _super.apply(this, arguments) || this;
 	    }
 	    MultiplesChart.prototype.render = function () {
-	        var _a = this.props, bufferSize = _a.bufferSize, color = _a.color, datasets = _a.datasets, multipleHeight = _a.multipleHeight, multipleWidth = _a.multipleWidth, selected = _a.selected, setDomain = _a.setDomain, ordered = _a.ordered, evictedIdx = _a.evictedIdx;
-	        var colorScale = utils_1.ColorScales[color](bufferSize);
+	        var _a = this.props, bufferSize = _a.bufferSize, datasets = _a.datasets, multipleHeight = _a.multipleHeight, multipleWidth = _a.multipleWidth, selected = _a.selected, setDomain = _a.setDomain, ordered = _a.ordered, evictedIdx = _a.evictedIdx, colorScale = _a.colorScale;
 	        // generate charts or indicator if chart is loading
 	        var charts = [];
 	        for (var i = 0; i < selected.length; i++) {
@@ -19611,7 +19789,7 @@
 	                    console.log("the S: ", s);
 	                    xDomain = JSON.parse(s);
 	                }
-	                charts[idx] = (React.createElement(Chart_1.default, { key: "chart_" + i, bufferSize: 1, datasets: datasets, selected: [s], width: multipleWidth, height: multipleHeight, color: c, xDomain: xDomain, showLabel: true }));
+	                charts[idx] = (React.createElement(Chart_1.default, { key: "chart_" + i, bufferSize: 1, datasets: datasets, selected: [s], width: multipleWidth, height: multipleHeight, colorOverride: true, xDomain: xDomain, yDomain: [0, 100] /* hardcoded */, showLabel: true, colorScale: colorScale }));
 	            }
 	        }
 	        return (React.createElement("div", { className: "multiples-wrapper inline-block" }, charts));
@@ -19619,12 +19797,10 @@
 	    return MultiplesChart;
 	}(React.Component));
 	MultiplesChart.defaultProps = {
-	    color: "BLUE",
 	    multipleHeight: 150,
 	    multipleWidth: 200,
 	    setDomains: false
 	};
-	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = MultiplesChart;
 
 
@@ -19633,8 +19809,11 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
+	Object.defineProperty(exports, "__esModule", { value: true });
 	var d3 = __webpack_require__(157);
-	var utils_1 = __webpack_require__(158);
+	var utils_1 = __webpack_require__(159);
+	var experiment_1 = __webpack_require__(167);
+	var stockData_1 = __webpack_require__(168);
 	/**
 	 * Returns a random integer between min and max (inclusive).
 	 * @param {number} min
@@ -19658,21 +19837,33 @@
 	    UNIFORM_3: function () { return getRandomInt(0, 3000); },
 	};
 	var facetValues = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-	var cannedValues = [
-	    [25, 31, 36, 21, 35, 11, 60, 39, 22, 43, 43, 47],
-	    [6, 63, 55, 52, 26, 38, 88, 28, 69, 32, 59, 56],
-	    [44, 45, 16, 32, 58, 12, 24, 36, 13, 41, 31, 33],
-	    [26, 48, 86, 75, 18, 55, 76, 25, 72, 51, 6, 18],
-	    [23, 26, 28, 59, 59, 42, 15, 31, 74, 21, 51, 49],
-	    [10, 13, 20, 38, 41, 38, 19, 50, 66, 26, 44, 36],
-	    [37, 36, 33, 74, 11, 16, 85, 48, 40, 74, 9, 59],
-	    [44, 72, 9, 13, 51, 7, 30, 14, 19, 9, 37, 89],
-	    [19, 8, 87, 64, 56, 8, 7, 63, 28, 49, 59, 25],
-	];
+	var cannedValues = (_a = {},
+	    _a[2 /* TASK */] = utils_1.shuffle([
+	        [25, 31, 36, 21, 35, 11, 60, 39, 22, 43, 43, 47],
+	        [6, 63, 55, 52, 26, 38, 88, 28, 69, 32, 59, 56],
+	        [44, 45, 16, 32, 58, 12, 24, 36, 13, 41, 31, 33],
+	        [26, 48, 86, 75, 18, 55, 76, 25, 72, 51, 6, 18],
+	        [23, 26, 28, 59, 59, 42, 15, 31, 74, 21, 51, 49],
+	        [10, 13, 20, 38, 41, 38, 19, 50, 66, 26, 44, 36],
+	        [37, 36, 33, 74, 11, 16, 85, 48, 40, 74, 9, 59],
+	        [44, 72, 9, 13, 51, 7, 30, 14, 19, 9, 37, 89],
+	        [19, 8, 87, 64, 56, 8, 7, 63, 28, 49, 59, 25],
+	    ]),
+	    _a[1 /* TRAINING */] = utils_1.shuffle([
+	        [76, 17, 65, 22, 37, 36, 77, 41, 16, 70, 30, 89],
+	        [36, 5, 12, 22, 18, 61, 14, 28, 23, 18, 22, 8],
+	        [54, 57, 28, 29, 55, 6, 57, 15, 9, 68, 9, 36],
+	    ]),
+	    _a[0 /* INSTRUCTIONS */] = [[8, 9, 14, 17, 26, 34, 36, 47, 56, 60, 63, 70]],
+	    _a);
 	// a global that determines the ordering of data per session
 	// the task number would index into the array to determine the delay
 	var delays = utils_1.shuffle(Object.keys(exports.DelayModes));
-	var shuffledCannedValues = utils_1.shuffle(cannedValues);
+	function getCannedValues(taskMode, taskNum) {
+	    var length = cannedValues[taskMode].length;
+	    return cannedValues[taskMode][taskNum % length];
+	}
+	exports.getCannedValues = getCannedValues;
 	/**
 	 * This function first takes in the canned random values (cannedValues)
 	 * and generates distractor bars.
@@ -19680,7 +19871,7 @@
 	 * HARDCODING, might need to update the state of experimentConfigs
 	 * @param
 	 */
-	function generateTaskData(taskNum) {
+	function generateTaskData(taskMode, taskNum) {
 	    // this tells the function where to put the canned values
 	    var cannedIdx = 2;
 	    var facetCount = 12;
@@ -19688,7 +19879,7 @@
 	    var taskCount = 3;
 	    var startYear = 2011;
 	    var random = function (i) { return { x: startYear + i, y: getRandomInt(5, 95) }; };
-	    var controlledNums = shuffledCannedValues[taskNum];
+	    var controlledNums = getCannedValues(taskMode, taskNum);
 	    var gendata = function (i) {
 	        var group = d3.range(barCount).map(random);
 	        group[cannedIdx].y = controlledNums[i];
@@ -19704,32 +19895,40 @@
 	 * keep track of whether data for a taskNum has been generated
 	 */
 	var dataCache = {};
-	// Simulated facet dataset (needs improvement)
-	// const FacetDataset: FacetData = {
-	//   Jan: [{x: 2011, y: 10}, {x: 2012, y: 20}, {x: 2013, y: 30}, {x: 2014, y: 7}, {x: 2015, y: 14}],
-	//   Feb: [{x: 2011, y: 25}, {x: 2012, y: 10}, {x: 2013, y: 25}, {x: 2014, y: 22}, {x: 2015, y: 29}],
-	//   Mar: [{x: 2011, y: 30}, {x: 2012, y: 30}, {x: 2013, y: 20}, {x: 2014, y: 17}, {x: 2015, y: 4}],
-	//   Apr: [{x: 2011, y: 21}, {x: 2012, y: 11}, {x: 2013, y: 27}, {x: 2014, y: 2}, {x: 2015, y: 9}],
-	//   May: [{x: 2011, y: 26}, {x: 2012, y: 20}, {x: 2013, y: 10}, {x: 2014, y: 7}, {x: 2015, y: 24}],
-	//   Jun: [{x: 2011, y: 2}, {x: 2012, y: 13}, {x: 2013, y: 15}, {x: 2014, y: 2}, {x: 2015, y: 4}],
-	//   Jul: [{x: 2011, y: 11}, {x: 2012, y: 23}, {x: 2013, y: 30}, {x: 2014, y: 28}, {x: 2015, y: 18}],
-	//   Aug: [{x: 2011, y: 5}, {x: 2012, y: 17}, {x: 2013, y: 24}, {x: 2014, y: 20}, {x: 2015, y: 19}],
-	//   Sep: [{x: 2011, y: 3}, {x: 2012, y: 20}, {x: 2013, y: 26}, {x: 2014, y: 15}, {x: 2015, y: 8}],
-	//   Oct: [{x: 2011, y: 24}, {x: 2012, y: 12}, {x: 2013, y: 7}, {x: 2014, y: 22}, {x: 2015, y: 9}],
-	//   Nov: [{x: 2011, y: 20}, {x: 2012, y: 28}, {x: 2013, y: 30}, {x: 2014, y: 23}, {x: 2015, y: 27}],
-	//   Dec: [{x: 2011, y: 12}, {x: 2012, y: 6}, {x: 2013, y: 19}, {x: 2014, y: 25}, {x: 2015, y: 14}],
-	// };
 	/**
 	 * Gets facet data using the given facet.
 	 * @param {number} taskNum
 	 * @param {string} facet
 	 */
-	function getFacetData(id, taskNum, facet) {
+	function getFacetData(id, taskNum, facet, taskMode) {
 	    if (!(id in dataCache)) {
-	        dataCache[id] = generateTaskData(taskNum);
+	        dataCache[id] = generateTaskData(taskMode, taskNum);
 	    }
 	    return dataCache[id][facet];
 	}
+	/**
+	 * getAnswers gets the respective answer the a taskType
+	 */
+	function getAnswers(id, taskNum, taskMode, taskType) {
+	    // HARDCODING
+	    var threshold = 80;
+	    var seenData = getMiddleStockData(taskNum, taskMode);
+	    if (taskType === experiment_1.TaskType.THRESHOLD) {
+	        var r = seenData.filter(function (val) { return val > threshold; });
+	        // boolean, will hard code the threshold here..
+	        return r.length > 0 ? "YES" : "NO";
+	    }
+	    else if (taskType === experiment_1.TaskType.EXTREMA) {
+	        // argmax, assume no duplicates
+	        var max = Math.max.apply(Math, seenData);
+	        return facetValues[seenData.indexOf(max)];
+	    }
+	    else {
+	        // trend not support!
+	        return;
+	    }
+	}
+	exports.getAnswers = getAnswers;
 	/**
 	 * Gets aggregation data
 	 * Performs multiple levels of aggregation
@@ -19763,6 +19962,33 @@
 	    return getAggregationData(selection);
 	}
 	exports.getAllAggregationData = getAllAggregationData;
+	function stockDataset(taskMode) {
+	    var stocks;
+	    if (taskMode === 0 /* INSTRUCTIONS */) {
+	        stocks = stockData_1.instructionsStocks;
+	    }
+	    else if (taskMode === 1 /* TRAINING */) {
+	        stocks = stockData_1.trainingStocks;
+	    }
+	    else if (taskMode === 2 /* TASK */) {
+	        stocks = stockData_1.taskStocks;
+	    }
+	    return stocks;
+	}
+	function getStockData(id, taskNum, predicate, taskMode) {
+	    var stocks = stockDataset(taskMode);
+	    var offset = facetValues.indexOf(predicate);
+	    var result = [];
+	    for (var i = 0; i < 5; i++) {
+	        result.push({ x: i + 2008, y: stocks[taskNum][i][offset] });
+	    }
+	    return result;
+	}
+	function getMiddleStockData(taskNum, taskMode) {
+	    var stocks = stockDataset(taskMode);
+	    return stocks[taskNum][2];
+	}
+	exports.getMiddleStockData = getMiddleStockData;
 	/**
 	 * Sends request for data (currently simulated). Gets the correct data based
 	 * on the path and predicate, and returns a Promise with the requested data
@@ -19773,11 +19999,12 @@
 	 * @param {string} delay
 	 * @param {number} itxid
 	 */
-	function getData(id, widget, taskNum, predicate, delay, itxid) {
+	function getData(id, widget, taskNum, predicate, delay, itxid, taskMode) {
 	    var data;
-	    if (widget === 0 /* Facet */) {
+	    if (widget === experiment_1.Widget.Facet) {
 	        // facet widgets, predicate will be a string like "Jan" or "Feb"
-	        data = getFacetData(id, taskNum, predicate);
+	        // data = getFacetData(id, taskNum, predicate, taskMode);
+	        data = getStockData(id, taskNum, predicate, taskMode);
 	    }
 	    else {
 	        // aggregate chart widgets, predicate will be a tuple like [2012,2015]
@@ -19793,6 +20020,7 @@
 	    });
 	}
 	exports.getData = getData;
+	var _a;
 
 
 /***/ },
@@ -19800,314 +20028,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var React = __webpack_require__(77);
-	var MergedContainer_1 = __webpack_require__(155);
-	var ExperimentTask = (function (_super) {
-	    __extends(ExperimentTask, _super);
-	    function ExperimentTask(props) {
-	        var _this = _super.call(this, props) || this;
-	        _this.showAnswerBox = _this.showAnswerBox.bind(_this);
-	        _this.submitAnswer = _this.submitAnswer.bind(_this);
-	        _this.changeAnswer = _this.changeAnswer.bind(_this);
-	        _this.continue = _this.continue.bind(_this);
-	        _this.cancel = _this.cancel.bind(_this);
-	        _this.state = {
-	            step: 0,
-	            view: 0,
-	            error: false,
-	            answer: null,
-	            widget: 0 /* Facet */,
-	            moneyEarned: 0,
-	            taskStartTime: Date.now(),
-	            answerStartTime: null,
-	            answerEndTime: null,
-	        };
-	        return _this;
-	    }
-	    ExperimentTask.prototype.showAnswerBox = function () {
-	        this.setState(function (prevState) {
-	            return {
-	                view: prevState.view + 1,
-	                answerStartTime: Date.now(),
-	            };
-	        });
-	    };
-	    ExperimentTask.prototype.changeAnswer = function (event) {
-	        this.setState({ answer: event.target.value });
-	    };
-	    ExperimentTask.prototype.submitAnswer = function () {
-	        var _this = this;
-	        this.setState(function (prevState) {
-	            var step = prevState.step, view = prevState.view, answer = prevState.answer, taskStartTime = prevState.taskStartTime, answerStartTime = prevState.answerStartTime;
-	            var withinSubjectsParams = _this.props.withinSubjectsParams;
-	            if (answer == null) {
-	                return { error: true };
-	            }
-	            var answerEndTime = Date.now();
-	            // const expected = evaluateAnswer(taskNum, barData);
-	            var expected = "";
-	            _this.props.submitAnswer({
-	                response: answer,
-	                expected: expected,
-	                taskStartTime: taskStartTime,
-	                answerStartTime: answerStartTime,
-	                answerEndTime: answerEndTime,
-	                params: withinSubjectsParams[step],
-	                eventLog: _this.viz.state.eventLog,
-	            });
-	            return {
-	                error: false,
-	                view: view + 1,
-	                answerEndTime: answerEndTime,
-	            };
-	        });
-	    };
-	    ExperimentTask.prototype.continue = function () {
-	        if (this.state.step < this.props.withinSubjectsParams.length - 1) {
-	            this.setState(function (prevState) {
-	                return {
-	                    step: prevState.step + 1,
-	                    view: 0,
-	                    error: false,
-	                    answer: null,
-	                    moneyEarned: prevState.moneyEarned + 1,
-	                    taskStartTime: Date.now(),
-	                    answerStartTime: null,
-	                    answerEndTime: null,
-	                };
-	            });
-	        }
-	        else {
-	            this.props.next();
-	        }
-	    };
-	    ExperimentTask.prototype.cancel = function () {
-	        var msg = "Are you sure you want to exit the HIT? You will only be paid $" + this.state.moneyEarned.toFixed(2) + " if you exit right now.";
-	        if (confirm(msg)) {
-	            this.props.cancel();
-	        }
-	    };
-	    ExperimentTask.prototype.render = function () {
-	        var _this = this;
-	        var _a = this.props, questions = _a.questions, betweenSubjectsParams = _a.betweenSubjectsParams, withinSubjectsParams = _a.withinSubjectsParams, isTraining = _a.isTraining;
-	        var _b = this.state, step = _b.step, view = _b.view, error = _b.error, answer = _b.answer, widget = _b.widget, moneyEarned = _b.moneyEarned;
-	        var question = null;
-	        var instructions = null;
-	        if (!isTraining) {
-	            instructions = (React.createElement("p", null, "You are not given any time limit, but you should try to answer the question as quickly as possible. Click on the \"Ready to answer\" button below to select your answer. Note that you may view the visualization, but not continue interacting with it when selecting your answer."));
-	        }
-	        else if (step !== 0) {
-	            instructions = (React.createElement("div", null,
-	                React.createElement("p", null, "You are not given any time limit, but you should try to answer the question as quickly as possible. Click on the \"Ready to answer\" button below to select your answer. Note that you may view the visualization, but not continue interacting with it when selecting your answer."),
-	                React.createElement("p", null, "Note that we have increased the loading delay of the visualization from the previous task. This is intentional, and you should spend some time adjusting your interactions if need be to prepare for the regular tasks.")));
-	        }
-	        if (view !== 0) {
-	            instructions = (React.createElement("p", null, "Click on YES or NO, and click the \"Submit task\" button below to submit your answer."));
-	            var invalid = error ? React.createElement("p", { className: "invalid" }, "Invalid input") : null;
-	            var correct = null;
-	            if (view === 2) {
-	                if (isTraining) {
-	                    correct = (React.createElement("p", null,
-	                        "Correct answer is ",
-	                        React.createElement("span", { className: "correct" }, "YES" /*the hardcoding is real*/),
-	                        ".",
-	                        React.createElement("br", null),
-	                        "Click the \"Continue to next task\" button below to continue."));
-	                }
-	                else {
-	                    correct = (React.createElement("p", null, "Answer submitted successfully, click the \"Continue to next task\" button below to continue."));
-	                }
-	            }
-	            question = (React.createElement("div", null,
-	                React.createElement("div", { className: "task-input" },
-	                    React.createElement("label", null, "Your answer: "),
-	                    React.createElement("div", { className: "radio-button-wrapper" },
-	                        React.createElement("label", null,
-	                            React.createElement("input", { type: "radio", name: "threshold-input", value: "YES", checked: answer === "YES", onChange: this.changeAnswer, disabled: view === 2 }),
-	                            " YES"),
-	                        React.createElement("label", null,
-	                            React.createElement("input", { type: "radio", name: "threshold-input", value: "NO", checked: answer === "NO", onChange: this.changeAnswer, disabled: view === 2 }),
-	                            " NO"))),
-	                invalid,
-	                correct));
-	        }
-	        // hard coding task num; larry todo
-	        var taskTitle, taskType, reward, cancelButton;
-	        if (isTraining) {
-	            taskTitle = "Training Task";
-	            taskType = "Training tasks";
-	            reward = null;
-	            cancelButton = null;
-	        }
-	        else {
-	            taskTitle = "Task";
-	            taskType = "Tasks";
-	            reward = React.createElement("span", null,
-	                "Current reward earned: $",
-	                moneyEarned.toFixed(2));
-	            cancelButton = React.createElement("button", { onClick: this.cancel, disabled: step === 0 }, "Finish and claim current reward");
-	        }
-	        return (React.createElement("div", null,
-	            React.createElement("h4", null,
-	                taskTitle,
-	                " ",
-	                step + 1),
-	            React.createElement("div", { className: "reward-box" },
-	                taskType,
-	                " completed: ",
-	                step,
-	                "/",
-	                withinSubjectsParams.length,
-	                React.createElement("br", null),
-	                reward),
-	            React.createElement("p", null,
-	                React.createElement("strong", null,
-	                    "Task: ",
-	                    questions[step])),
-	            instructions,
-	            React.createElement(MergedContainer_1.default, { bufferSize: withinSubjectsParams[step].bufferSize, delay: withinSubjectsParams[step].delay, encoding: withinSubjectsParams[step].encoding, ref: function (v) { return _this.viz = v; }, taskNum: step, widget: widget, disabled: view > 0 }),
-	            question,
-	            React.createElement("div", { className: "button-wrapper" },
-	                React.createElement("button", { onClick: this.showAnswerBox, disabled: view !== 0 }, "Ready to answer"),
-	                React.createElement("button", { onClick: this.submitAnswer, disabled: view !== 1 }, "Submit task"),
-	                React.createElement("button", { onClick: this.continue, disabled: view !== 2 }, "Continue to next task"),
-	                cancelButton)));
-	    };
-	    return ExperimentTask;
-	}(React.Component));
 	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = ExperimentTask;
-
-
-/***/ },
-/* 168 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var React = __webpack_require__(77);
-	var ExperimentUsability = (function (_super) {
-	    __extends(ExperimentUsability, _super);
-	    function ExperimentUsability(props) {
-	        var _this = _super.call(this, props) || this;
-	        _this.onChange = _this.onChange.bind(_this);
-	        _this.onClick = _this.onClick.bind(_this);
-	        _this.state = {
-	            confidence: null,
-	            usability: null,
-	            difficulty: null,
-	            comments: "",
-	            error: false,
-	        };
-	        return _this;
-	    }
-	    ExperimentUsability.prototype.onChange = function (event) {
-	        this.setState((_a = {}, _a[event.target.name] = event.target.value, _a));
-	        var _a;
-	    };
-	    ExperimentUsability.prototype.onClick = function (event) {
-	        var _this = this;
-	        this.setState(function (prevState) {
-	            var confidence = prevState.confidence, usability = prevState.usability, difficulty = prevState.difficulty, comments = prevState.comments;
-	            if (confidence == null || usability == null || difficulty == null) {
-	                return { error: true };
-	            }
-	            else {
-	                _this.props.onClick({ confidence: confidence, usability: usability, difficulty: difficulty, comments: comments });
-	                return { error: false };
-	            }
-	        });
-	    };
-	    ExperimentUsability.prototype.render = function () {
-	        var _a = this.state, confidence = _a.confidence, usability = _a.usability, difficulty = _a.difficulty, comments = _a.comments, error = _a.error;
-	        var invalid = error ? React.createElement("p", { className: "invalid" }, "You must complete all the required survey questions above to submit") : null;
-	        return (React.createElement("div", null,
-	            React.createElement("h4", null, "Usability Survey"),
-	            React.createElement("p", null, "You have successfully completed all the visual analysis tasks. Before submitting this HIT, please complete the following usability survey corresponding to the tasks you just completed. When you are finished with the survey, you may click the \"Finish HIT\" button below to complete this HIT."),
-	            React.createElement("label", { htmlFor: "confidence" }, "How confident are you that your answers are correct?:"),
-	            React.createElement("br", null),
-	            React.createElement("div", { className: "radio-button-wrapper" },
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "confidence", value: "1", checked: confidence === "1", onChange: this.onChange }),
-	                    " Not confident"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "confidence", value: "2", checked: confidence === "2", onChange: this.onChange }),
-	                    " Slightly confident"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "confidence", value: "3", checked: confidence === "3", onChange: this.onChange }),
-	                    " Fairly confident"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "confidence", value: "4", checked: confidence === "4", onChange: this.onChange }),
-	                    " Very confident"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "confidence", value: "5", checked: confidence === "5", onChange: this.onChange }),
-	                    " Extremely confident")),
-	            React.createElement("br", null),
-	            React.createElement("label", { htmlFor: "usability" }, "How difficult was it to use the visualizations?:"),
-	            React.createElement("br", null),
-	            React.createElement("div", { className: "radio-button-wrapper" },
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "usability", value: "1", checked: usability === "1", onChange: this.onChange }),
-	                    " Very easy"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "usability", value: "2", checked: usability === "2", onChange: this.onChange }),
-	                    " Easy"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "usability", value: "3", checked: usability === "3", onChange: this.onChange }),
-	                    " Neutral"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "usability", value: "4", checked: usability === "4", onChange: this.onChange }),
-	                    " Difficult"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "usability", value: "5", checked: usability === "5", onChange: this.onChange }),
-	                    " Very difficult")),
-	            React.createElement("br", null),
-	            React.createElement("label", { htmlFor: "difficulty" }, "How difficult was it to complete the tasks?:"),
-	            React.createElement("br", null),
-	            React.createElement("div", { className: "radio-button-wrapper" },
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "difficulty", value: "1", checked: difficulty === "1", onChange: this.onChange }),
-	                    " Very easy"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "difficulty", value: "2", checked: difficulty === "2", onChange: this.onChange }),
-	                    " Easy"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "difficulty", value: "3", checked: difficulty === "3", onChange: this.onChange }),
-	                    " Neutral"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "difficulty", value: "4", checked: difficulty === "4", onChange: this.onChange }),
-	                    " Difficult"),
-	                React.createElement("label", null,
-	                    React.createElement("input", { type: "radio", name: "difficulty", value: "5", checked: difficulty === "5", onChange: this.onChange }),
-	                    " Very difficult")),
-	            React.createElement("br", null),
-	            React.createElement("label", { htmlFor: "comments" }, "If you have any other comments about the tasks you just completed, the visualizations that you used, or the study procedure in general, please write them in the box below (optional):"),
-	            React.createElement("br", null),
-	            React.createElement("textarea", { id: "comments", name: "comments", onChange: this.onChange }),
-	            invalid,
-	            React.createElement("div", { className: "button-wrapper" },
-	                React.createElement("button", { onClick: this.onClick }, "Finish HIT"))));
-	    };
-	    return ExperimentUsability;
-	}(React.Component));
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = ExperimentUsability;
-
-
-/***/ },
-/* 169 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
 	var data_1 = __webpack_require__(166);
 	exports.BlockingModes = {
 	    NONE: 0,
@@ -20118,6 +20039,21 @@
 	    MULTIPLES: 5,
 	    MONOTONE: 6,
 	};
+	var ColorEncoding;
+	(function (ColorEncoding) {
+	    ColorEncoding[ColorEncoding["Multiple"] = 0] = "Multiple";
+	    ColorEncoding[ColorEncoding["Blue"] = 1] = "Blue";
+	})(ColorEncoding = exports.ColorEncoding || (exports.ColorEncoding = {}));
+	var Encoding;
+	(function (Encoding) {
+	    Encoding[Encoding["Position"] = 0] = "Position";
+	    Encoding[Encoding["Color"] = 1] = "Color";
+	})(Encoding = exports.Encoding || (exports.Encoding = {}));
+	var Widget;
+	(function (Widget) {
+	    Widget[Widget["Facet"] = 0] = "Facet";
+	    Widget[Widget["Brush"] = 1] = "Brush";
+	})(Widget = exports.Widget || (exports.Widget = {}));
 	exports.IndicatorModes = {
 	    NONE: 0,
 	    SPINNER: 1,
@@ -20146,6 +20082,20 @@
 	    MULTIPLES: 1,
 	};
 	;
+	var TaskType;
+	(function (TaskType) {
+	    TaskType[TaskType["TREND"] = 0] = "TREND";
+	    TaskType[TaskType["EXTREMA"] = 1] = "EXTREMA";
+	    TaskType[TaskType["THRESHOLD"] = 2] = "THRESHOLD";
+	})(TaskType = exports.TaskType || (exports.TaskType = {}));
+	exports.TaskQuestions = (_a = {},
+	    _a[TaskType.THRESHOLD] = "Does any month have a stock price higher than 80 for the year 2010?",
+	    _a[TaskType.EXTREMA] = "Which month had the highest stock price for the year 2010?",
+	    _a);
+	exports.TaskInstructions = (_b = {},
+	    _b[TaskType.THRESHOLD] = "Click YES or NO.",
+	    _b[TaskType.EXTREMA] = "Write your answer in the text box. Your answer should be written in exactly the same format as how the months are listed e.g. 'Jan'",
+	    _b);
 	var Delays = ["NONE", "UNIFORM_5"];
 	// export function getWithinSubjectsParams(rng?: any) {
 	//   const combos = [];
@@ -20245,6 +20195,516 @@
 	    return array;
 	}
 	exports.shuffle = shuffle;
+	var _a, _b;
+
+
+/***/ },
+/* 168 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	Object.defineProperty(exports, "__esModule", { value: true });
+	var utils_1 = __webpack_require__(159);
+	// 1-d max at: 8 year: 2003
+	var d = {
+	    0: [5.09, 5.0, 6.11, 9.77, 14.66, 20.32, 15.98, 14.62, 16.53, 17.55, 16.79, 18.66],
+	    1: [20.36, 21.47, 22.45, 22.53, 21.13, 22.06, 22.57, 24.15, 26.83, 26.66, 28.53, 31.21],
+	    2: [32.96, 37.38, 42.87, 44.74, 38.96, 41.81, 45.09, 46.49, 58.7, 52.83, 49.38, 54.06],
+	    3: [53.13, 48.74, 43.77, 45.77, 46.49, 47.04, 53.04, 56.79, 56.28, 57.21, 61.26, 65.21],
+	    4: [64.06, 73.55, 72.91, 80.66, 79.34, 70.45, 74.66, 75.43, 75.51, 76.49, 85.55, 95.0],
+	};
+	// 2-jbl max at: 1 year: 2005
+	var jbl = {
+	    0: [50.8, 54.37, 60.02, 62.02, 64.02, 66.77, 72.42, 67.22, 66.48, 67.43, 71.62, 80.92],
+	    1: [89.3, 89.96, 90.01, 95.0, 84.1, 64.4, 52.88, 56.29, 61.62, 67.51, 65.76, 60.53],
+	    2: [54.85, 59.04, 55.76, 49.23, 51.57, 47.28, 52.4, 49.52, 53.2, 48.16, 40.72, 36.06],
+	    3: [28.67, 29.63, 23.74, 19.8, 22.91, 31.26, 34.22, 38.16, 25.21, 14.01, 11.72, 10.49],
+	    4: [10.76, 8.73, 5.0, 11.77, 15.08, 13.85, 14.94, 20.7, 25.5, 32.17, 31.42, 33.79],
+	};
+	// 3-tmk max at: 11 year: 2002
+	var tmk = {
+	    0: [14.04, 14.89, 21.58, 21.9, 21.45, 17.56, 5.0, 9.11, 7.76, 5.95, 11.19, 12.0],
+	    1: [12.55, 8.57, 8.61, 15.03, 16.43, 15.75, 18.1, 22.85, 25.56, 27.95, 33.28, 34.82],
+	    2: [39.2, 51.45, 57.45, 59.17, 55.2, 61.61, 58.77, 54.97, 56.82, 58.86, 66.67, 74.71],
+	    3: [67.08, 64.95, 58.09, 56.87, 61.16, 59.85, 60.21, 57.45, 60.26, 59.4, 64.01, 67.21],
+	    4: [69.25, 68.66, 70.92, 75.84, 81.17, 78.51, 86.19, 84.52, 90.12, 92.24, 91.93, 95.0],
+	};
+	// 4-yhoo max at: 0 year: 1998
+	var yhoo = {
+	    0: [5.0, 5.07, 6.25, 8.14, 8.38, 8.83, 12.77, 12.65, 12.92, 16.03, 23.71, 28.51],
+	    1: [42.69, 39.97, 43.72, 49.75, 40.06, 37.56, 39.99, 35.84, 43.03, 45.85, 52.8, 88.87],
+	    2: [95.0, 87.08, 89.93, 69.66, 63.37, 69.15, 65.56, 66.41, 54.97, 34.51, 28.2, 17.86],
+	    3: [17.38, 15.9, 9.44, 9.68, 10.99, 10.24, 10.12, 8.54, 6.16, 6.62, 8.4, 10.03],
+	    4: [10.67, 8.93, 10.32, 9.15, 9.25, 8.83, 7.54, 6.94, 6.03, 7.49, 9.56, 9.53],
+	};
+	// 5-abt max at: 11 year: 1999
+	var abt = {
+	    0: [51.19, 48.71, 55.84, 63.38, 53.36, 41.89, 39.0, 37.55, 38.79, 24.22, 22.15, 16.99],
+	    1: [5.62, 9.44, 5.0, 25.05, 28.97, 34.55, 39.2, 35.79, 48.19, 65.14, 76.81, 66.58],
+	    2: [48.19, 62.14, 53.77, 55.01, 68.03, 72.78, 70.1, 76.3, 71.03, 78.98, 82.5, 88.9],
+	    3: [93.04, 95.0, 86.63, 84.05, 68.96, 34.86, 19.67, 35.9, 35.38, 44.78, 52.84, 37.76],
+	    4: [33.73, 24.43, 25.77, 38.27, 49.12, 58.52, 47.37, 37.86, 50.26, 48.19, 53.46, 62.45],
+	};
+	// 6-bax max at: 11 year: 2004
+	var bax = {
+	    0: [6.77, 5.71, 5.0, 9.49, 9.15, 11.59, 9.68, 7.24, 8.92, 7.79, 9.06, 12.42],
+	    1: [16.8, 16.87, 15.69, 16.94, 21.59, 20.71, 23.78, 26.11, 27.56, 24.03, 23.99, 25.14],
+	    2: [25.46, 23.39, 24.84, 24.08, 23.2, 23.11, 26.29, 34.22, 39.08, 40.37, 39.54, 45.16],
+	    3: [46.34, 51.18, 52.97, 62.37, 66.08, 65.3, 65.02, 56.41, 62.81, 67.12, 69.17, 72.03],
+	    4: [76.61, 74.75, 69.06, 75.05, 77.21, 77.79, 88.13, 95.0, 90.14, 76.43, 69.4, 58.62],
+	};
+	// 7-amat max at: 10 year: 2001
+	var amat = {
+	    0: [77.09, 74.51, 77.95, 80.96, 95.0, 90.27, 71.71, 70.71, 37.68, 30.87, 51.58, 62.47],
+	    1: [65.12, 70.92, 91.06, 93.42, 85.54, 55.52, 35.96, 16.25, 5.72, 7.22, 29.0, 17.04],
+	    2: [17.75, 5.0, 7.94, 16.39, 20.33, 27.64, 42.76, 53.08, 57.88, 59.89, 83.32, 69.85],
+	    3: [77.3, 67.84, 61.11, 61.32, 47.78, 47.21, 36.53, 29.86, 32.66, 30.94, 32.59, 36.24],
+	    4: [30.37, 35.81, 32.09, 25.06, 27.79, 33.59, 37.89, 41.11, 38.54, 35.17, 38.89, 46.27],
+	};
+	// 8-hsp max at: 2 year: 2006
+	var hsp = {
+	    0: [58.79, 62.13, 45.9, 40.62, 48.26, 53.29, 53.58, 38.8, 37.74, 38.96, 27.21, 29.13],
+	    1: [32.71, 38.31, 44.19, 48.86, 45.54, 43.29, 45.75, 40.95, 45.54, 48.03, 49.14, 54.98],
+	    2: [48.86, 49.09, 57.23, 50.21, 47.41, 47.82, 41.68, 42.28, 43.21, 19.23, 16.51, 10.31],
+	    3: [6.06, 6.17, 5.0, 22.78, 27.53, 33.51, 38.34, 44.45, 51.01, 59.8, 65.22, 69.36],
+	    4: [77.35, 75.17, 86.58, 90.28, 80.1, 84.22, 92.77, 77.19, 87.15, 93.94, 95.0, 89.58],
+	};
+	// 9-ivz max at: 0 year: 2000
+	var ivz = {
+	    0: [37.57, 39.0, 45.41, 48.85, 47.49, 54.33, 66.51, 78.67, 86.61, 88.71, 94.29, 85.93],
+	    1: [95.0, 87.87, 62.82, 65.31, 76.11, 71.28, 60.81, 60.68, 38.45, 44.44, 52.97, 56.66],
+	    2: [56.5, 45.15, 52.8, 45.97, 36.57, 26.23, 19.2, 15.73, 10.57, 8.08, 16.34, 15.24],
+	    3: [13.72, 6.62, 5.0, 9.47, 11.22, 18.9, 20.2, 23.73, 26.65, 25.61, 19.07, 18.0],
+	    4: [24.32, 24.35, 23.12, 22.01, 16.6, 18.64, 14.2, 8.53, 11.61, 11.32, 14.27, 14.92],
+	};
+	// 10-nee max at: 7 year: 2007
+	var nee = {
+	    0: [37.6, 52.86, 54.03, 65.62, 70.69, 55.72, 48.79, 55.84, 64.45, 69.0, 85.9, 95.0],
+	    1: [82.32, 75.84, 67.83, 82.4, 82.4, 82.97, 81.44, 63.85, 45.57, 5.0, 16.39, 21.22],
+	    2: [31.2, 31.81, 21.18, 38.21, 53.38, 57.93, 58.21, 66.82, 52.9, 45.65, 40.22, 51.45],
+	    3: [40.94, 27.54, 29.35, 37.92, 44.53, 40.62, 48.11, 52.05, 60.02, 62.32, 54.87, 49.92],
+	    4: [58.9, 63.73, 62.4, 69.2, 76.85, 72.3, 77.45, 63.77, 68.27, 70.25, 71.33, 85.46],
+	};
+	// 8-payx max at: 4 year: 2006
+	var payx = {
+	    0: [60.19, 60.91, 70.66, 76.25, 67.59, 64.2, 56.3, 49.51, 54.44, 66.39, 70.5, 72.86],
+	    1: [74.61, 80.58, 73.02, 62.61, 70.66, 74.88, 83.38, 95.0, 93.79, 83.6, 74.99, 72.31],
+	    2: [48.25, 48.9, 43.75, 61.62, 68.47, 48.47, 44.74, 56.52, 50.55, 25.77, 21.72, 18.92],
+	    3: [16.73, 14.37, 5.0, 24.68, 28.02, 26.71, 18.87, 32.02, 37.78, 36.57, 48.9, 52.3],
+	    4: [48.03, 45.29, 53.45, 52.14, 46.05, 36.9, 28.4, 25.5, 30.76, 37.78, 41.39, 53.4],
+	};
+	// 9-dell max at: 6 year: 2005
+	var dell = {
+	    0: [94.45, 95.0, 90.34, 83.99, 88.21, 92.85, 94.39, 85.35, 77.32, 71.11, 63.86, 69.05],
+	    1: [65.57, 65.82, 63.03, 60.55, 49.38, 49.27, 42.32, 41.16, 41.49, 45.77, 51.86, 54.01],
+	    2: [51.7, 47.61, 43.81, 49.16, 52.52, 57.35, 63.75, 56.0, 57.9, 59.53, 57.65, 49.05],
+	    3: [38.98, 35.86, 35.62, 33.6, 37.11, 46.35, 44.8, 50.32, 30.76, 17.27, 11.15, 10.79],
+	    4: [9.39, 5.0, 6.21, 9.36, 11.67, 15.89, 16.83, 20.03, 24.8, 23.07, 22.27, 18.6],
+	};
+	// 10-kr max at: 1 year: 2002
+	var kr = {
+	    0: [68.2, 72.15, 84.18, 83.81, 85.6, 67.54, 57.95, 58.79, 31.9, 10.83, 17.41, 20.52],
+	    1: [27.1, 10.74, 5.0, 8.76, 18.45, 29.55, 35.56, 45.53, 50.42, 47.13, 47.13, 43.09],
+	    2: [51.74, 61.14, 39.51, 37.82, 34.81, 39.61, 35.28, 26.44, 28.79, 20.71, 28.79, 35.09],
+	    3: [35.75, 41.87, 30.3, 25.22, 31.8, 43.56, 58.42, 59.08, 65.94, 61.71, 57.85, 56.63],
+	    4: [52.59, 59.36, 65.75, 62.84, 63.5, 64.91, 84.94, 90.49, 92.08, 85.22, 81.93, 95.0],
+	};
+	// 8-ko max at: 0 year: 2006
+	var ko = {
+	    0: [5.0, 6.32, 7.9, 7.39, 11.11, 11.05, 13.51, 14.08, 16.34, 17.86, 22.27, 28.32],
+	    1: [27.69, 26.87, 25.11, 35.5, 39.6, 38.78, 42.37, 44.64, 51.76, 59.14, 67.77, 72.56],
+	    2: [73.51, 61.09, 63.93, 65.38, 57.56, 51.32, 40.48, 49.62, 45.71, 26.81, 23.78, 24.79],
+	    3: [22.14, 18.99, 15.84, 24.1, 26.68, 37.58, 40.29, 39.79, 48.49, 55.55, 62.16, 67.58],
+	    4: [62.61, 58.82, 57.75, 59.08, 54.16, 51.83, 56.24, 64.62, 72.5, 79.56, 88.07, 95.0],
+	};
+	exports.instructionsStocks = [payx, payx, payx, payx];
+	exports.trainingStocks = [kr, dell, ivz, ko];
+	exports.taskStocks = utils_1.shuffle([d, jbl, tmk, yhoo, abt, bax, amat, hsp, nee]);
+
+
+/***/ },
+/* 169 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
+	var React = __webpack_require__(77);
+	var MergedContainer_1 = __webpack_require__(155);
+	var data_1 = __webpack_require__(166);
+	var experiment_1 = __webpack_require__(167);
+	var ExperimentTask = (function (_super) {
+	    __extends(ExperimentTask, _super);
+	    function ExperimentTask(props) {
+	        var _this = _super.call(this, props) || this;
+	        _this.showAnswerBox = _this.showAnswerBox.bind(_this);
+	        _this.submitAnswer = _this.submitAnswer.bind(_this);
+	        _this.changeAnswer = _this.changeAnswer.bind(_this);
+	        _this.continue = _this.continue.bind(_this);
+	        _this.cancel = _this.cancel.bind(_this);
+	        _this.state = {
+	            step: 0,
+	            view: 0,
+	            error: false,
+	            answer: null,
+	            widget: experiment_1.Widget.Facet,
+	            moneyEarned: 0,
+	            taskStartTime: Date.now(),
+	            answerStartTime: null,
+	            answerEndTime: null,
+	        };
+	        return _this;
+	    }
+	    ExperimentTask.prototype.showAnswerBox = function () {
+	        this.setState(function (prevState) {
+	            return {
+	                view: prevState.view + 1,
+	                answerStartTime: Date.now(),
+	            };
+	        });
+	    };
+	    ExperimentTask.prototype.changeAnswer = function (event) {
+	        this.setState({ answer: event.target.value });
+	    };
+	    ExperimentTask.prototype.submitAnswer = function () {
+	        var _this = this;
+	        this.setState(function (prevState) {
+	            var step = prevState.step, view = prevState.view, answer = prevState.answer, taskStartTime = prevState.taskStartTime, answerStartTime = prevState.answerStartTime;
+	            var _a = _this.props, isTraining = _a.isTraining, submitAnswer = _a.submitAnswer, taskType = _a.taskType, withinSubjectsParams = _a.withinSubjectsParams;
+	            if (answer == null) {
+	                return { error: true };
+	            }
+	            else if (taskType === experiment_1.TaskType.EXTREMA) {
+	                var answerChoices = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+	                if (answerChoices.indexOf(answer) === -1) {
+	                    return { error: true };
+	                }
+	            }
+	            var answerEndTime = Date.now();
+	            var taskMode = isTraining ? 1 /* TRAINING */ : 2 /* TASK */;
+	            var expected = data_1.getAnswers("foo", step, taskMode, taskType);
+	            submitAnswer({
+	                bufferSize: withinSubjectsParams[step].bufferSize,
+	                dataset: data_1.getMiddleStockData(step, taskMode),
+	                delay: withinSubjectsParams[step].delay,
+	                encoding: experiment_1.Encoding[withinSubjectsParams[step].encoding],
+	                eventLog: _this.viz.state.eventLog,
+	                expected: expected,
+	                response: answer,
+	                responseEndTime: answerEndTime,
+	                taskNum: step,
+	                taskType: experiment_1.TaskType[taskType],
+	                vizEndTime: answerStartTime,
+	                vizStartTime: taskStartTime,
+	                widget: experiment_1.Widget[withinSubjectsParams[step].widget],
+	            });
+	            return {
+	                error: false,
+	                view: view + 1,
+	                answerEndTime: answerEndTime,
+	            };
+	        });
+	    };
+	    ExperimentTask.prototype.continue = function () {
+	        if (this.state.step < this.props.withinSubjectsParams.length - 1) {
+	            this.setState(function (prevState, props) {
+	                return {
+	                    step: prevState.step + 1,
+	                    view: 0,
+	                    error: false,
+	                    answer: null,
+	                    moneyEarned: prevState.moneyEarned + props.taskReward,
+	                    taskStartTime: Date.now(),
+	                    answerStartTime: null,
+	                    answerEndTime: null,
+	                };
+	            });
+	        }
+	        else {
+	            this.props.next();
+	        }
+	    };
+	    ExperimentTask.prototype.cancel = function () {
+	        var msg = "Are you sure you want to exit the HIT? You will only be paid $" + this.state.moneyEarned.toFixed(2) + " if you exit right now.";
+	        if (confirm(msg)) {
+	            this.props.cancel();
+	        }
+	    };
+	    ExperimentTask.prototype.render = function () {
+	        var _this = this;
+	        var _a = this.props, betweenSubjectsParams = _a.betweenSubjectsParams, withinSubjectsParams = _a.withinSubjectsParams, isTraining = _a.isTraining, taskType = _a.taskType;
+	        var _b = this.state, step = _b.step, view = _b.view, error = _b.error, answer = _b.answer, widget = _b.widget, moneyEarned = _b.moneyEarned;
+	        // task configurations
+	        var taskInstructions = (_c = {},
+	            _c[experiment_1.TaskType.TREND] = React.createElement("p", null, "Click on YES or NO, and click the \"Submit task\" button."),
+	            _c[experiment_1.TaskType.EXTREMA] = React.createElement("p", null, "Enter the month with the highest value, and click the \"Submit task\" button."),
+	            _c);
+	        var task = null;
+	        var instructions = null;
+	        if (isTraining) {
+	            instructions = React.createElement("p", null,
+	                "You are not given any time limit, but you should ",
+	                React.createElement("b", null, "try to answer the question as quickly as possible"),
+	                ". Click on the \"Ready to answer\" button below to select your answer, but note that you may not continue interacting with the visualization when selecting your answer.");
+	        }
+	        if (view !== 0) {
+	            instructions = taskInstructions[taskType];
+	            var invalid = error ? React.createElement("p", { className: "invalid" }, "Invalid input") : null;
+	            var msg = null;
+	            if (view === 2) {
+	                if (isTraining) {
+	                    // the id is not needed in this case (would be when we access more complex data)
+	                    var answer_1 = data_1.getAnswers("foo", step, 1 /* TRAINING */, taskType);
+	                    msg = (React.createElement("p", null,
+	                        "Correct answer is ",
+	                        React.createElement("span", { className: "correct" }, answer_1),
+	                        ".",
+	                        React.createElement("br", null),
+	                        "Click the \"Continue to next task\" button below to continue."));
+	                }
+	                else {
+	                    msg = (React.createElement("p", null, "Answer submitted successfully, click the \"Continue to next task\" button below to continue."));
+	                }
+	            }
+	            var answerInput = void 0;
+	            if (taskType === experiment_1.TaskType.THRESHOLD) {
+	                answerInput = React.createElement("div", { className: "radio-button-wrapper" },
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "threshold-input", value: "YES", checked: answer === "YES", onChange: this.changeAnswer, disabled: view === 2 }),
+	                        " YES"),
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "threshold-input", value: "NO", checked: answer === "NO", onChange: this.changeAnswer, disabled: view === 2 }),
+	                        " NO"));
+	            }
+	            else {
+	                answerInput = React.createElement("div", null,
+	                    React.createElement("input", { id: "answer-input", name: "task", type: "text", onChange: this.changeAnswer, disabled: view === 2 }));
+	            }
+	            task = (React.createElement("div", null,
+	                React.createElement("div", { className: "task-input" },
+	                    React.createElement("label", null, "Your answer: "),
+	                    answerInput),
+	                invalid,
+	                msg));
+	        }
+	        var taskTitle, taskName, taskMode, reward, cancelButton;
+	        if (isTraining) {
+	            taskTitle = "Training Task";
+	            taskName = "Training tasks";
+	            taskMode = 1 /* TRAINING */;
+	            reward = null;
+	            cancelButton = null;
+	        }
+	        else {
+	            taskTitle = "Task";
+	            taskName = "Tasks";
+	            taskMode = 2 /* TASK */;
+	            reward = React.createElement("span", null,
+	                "Current reward earned: $",
+	                moneyEarned.toFixed(2));
+	            cancelButton = React.createElement("button", { onClick: this.cancel, disabled: step === 0 }, "Finish and claim current reward");
+	        }
+	        var question = experiment_1.TaskQuestions[taskType];
+	        return (React.createElement("div", null,
+	            React.createElement("h4", null,
+	                taskTitle,
+	                " ",
+	                step + 1),
+	            React.createElement("div", { className: "reward-box" },
+	                taskName,
+	                " completed: ",
+	                step,
+	                "/",
+	                withinSubjectsParams.length,
+	                React.createElement("br", null),
+	                reward),
+	            React.createElement("p", null,
+	                React.createElement("strong", null,
+	                    "Task: ",
+	                    question)),
+	            instructions,
+	            React.createElement(MergedContainer_1.default, { bufferSize: withinSubjectsParams[step].bufferSize, delay: withinSubjectsParams[step].delay, encoding: withinSubjectsParams[step].encoding, ref: function (v) { return _this.viz = v; }, taskNum: step, widget: widget, disabled: view > 0, taskType: this.props.taskType, taskMode: taskMode, key: step }),
+	            task,
+	            React.createElement("div", { className: "button-wrapper" },
+	                React.createElement("button", { onClick: this.showAnswerBox, disabled: view !== 0 }, "Ready to answer"),
+	                React.createElement("button", { onClick: this.submitAnswer, disabled: view !== 1 }, "Submit task"),
+	                React.createElement("button", { onClick: this.continue, disabled: view !== 2 }, "Continue to next task"),
+	                cancelButton)));
+	        var _c;
+	    };
+	    return ExperimentTask;
+	}(React.Component));
+	exports.default = ExperimentTask;
+
+
+/***/ },
+/* 170 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || (function () {
+	    var extendStatics = Object.setPrototypeOf ||
+	        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+	        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+	    return function (d, b) {
+	        extendStatics(d, b);
+	        function __() { this.constructor = d; }
+	        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	    };
+	})();
+	Object.defineProperty(exports, "__esModule", { value: true });
+	var React = __webpack_require__(77);
+	var ExperimentUsability = (function (_super) {
+	    __extends(ExperimentUsability, _super);
+	    function ExperimentUsability(props) {
+	        var _this = _super.call(this, props) || this;
+	        _this.onChange = _this.onChange.bind(_this);
+	        _this.onClick = _this.onClick.bind(_this);
+	        _this.state = {
+	            buffer: null,
+	            buffersize: null,
+	            delay: null,
+	            delaymultiple: null,
+	            comments: "",
+	            experience: "",
+	            error: false,
+	            disabled: false,
+	        };
+	        return _this;
+	    }
+	    ExperimentUsability.prototype.onChange = function (event) {
+	        this.setState((_a = {}, _a[event.target.name] = event.target.value, _a));
+	        var _a;
+	    };
+	    ExperimentUsability.prototype.onClick = function (event) {
+	        var _this = this;
+	        this.setState(function (prevState) {
+	            var buffer = prevState.buffer, buffersize = prevState.buffersize, delay = prevState.delay, delaymultiple = prevState.delaymultiple, experience = prevState.experience, comments = prevState.comments;
+	            if (buffer == null || buffersize == null || delay == null || delaymultiple == null) {
+	                return { error: true };
+	            }
+	            else {
+	                _this.props.onClick({ buffer: buffer, buffersize: buffersize, delay: delay, delaymultiple: delaymultiple, experience: experience, comments: comments });
+	                return { error: false, disabled: true };
+	            }
+	        });
+	    };
+	    ExperimentUsability.prototype.render = function () {
+	        var _a = this.state, buffer = _a.buffer, buffersize = _a.buffersize, delay = _a.delay, delaymultiple = _a.delaymultiple, comments = _a.comments, error = _a.error, disabled = _a.disabled;
+	        var invalid = error ? React.createElement("p", { className: "invalid" }, "You must complete all the required survey questions above to submit") : null;
+	        return (React.createElement("div", null,
+	            React.createElement("h4", null, "Usability Survey"),
+	            React.createElement("p", null, "You have successfully completed all the visual analysis tasks. Before submitting this HIT, please complete the following usability survey corresponding to the tasks you just completed. When you are finished with the survey, you may click the \"Finish HIT\" button below to complete this HIT."),
+	            React.createElement("label", { htmlFor: "buffer" }, "How much did you prefer viewing one month of data at once versus multiple months of data at once?:"),
+	            React.createElement("br", null),
+	            React.createElement("div", { className: "radio-button-wrapper" },
+	                React.createElement("span", null,
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "buffer", value: "1", checked: buffer === "1", onChange: this.onChange }),
+	                        " Strongly prefer one month at once")),
+	                React.createElement("span", null,
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "buffer", value: "2", checked: buffer === "2", onChange: this.onChange }),
+	                        " Slightly prefer one month at once")),
+	                React.createElement("span", null,
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "buffer", value: "3", checked: buffer === "3", onChange: this.onChange }),
+	                        " Neutral")),
+	                React.createElement("span", null,
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "buffer", value: "4", checked: buffer === "4", onChange: this.onChange }),
+	                        " Slightly prefer multiple months at once")),
+	                React.createElement("span", null,
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "buffer", value: "5", checked: buffer === "5", onChange: this.onChange }),
+	                        " Strongly prefer multiple months at once"))),
+	            React.createElement("br", null),
+	            React.createElement("label", { htmlFor: "buffersize" }, "How much did you prefer viewing three months of data at once versus six months of data at once?:"),
+	            React.createElement("br", null),
+	            React.createElement("div", { className: "radio-button-wrapper" },
+	                React.createElement("span", null,
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "buffersize", value: "1", checked: buffersize === "1", onChange: this.onChange }),
+	                        " Strongly prefer three months at once")),
+	                React.createElement("span", null,
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "buffersize", value: "2", checked: buffersize === "2", onChange: this.onChange }),
+	                        " Slightly prefer three months at once")),
+	                React.createElement("span", null,
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "buffersize", value: "3", checked: buffersize === "3", onChange: this.onChange }),
+	                        " Neutral")),
+	                React.createElement("span", null,
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "buffersize", value: "4", checked: buffersize === "4", onChange: this.onChange }),
+	                        " Slightly prefer six months at once")),
+	                React.createElement("span", null,
+	                    React.createElement("label", null,
+	                        React.createElement("input", { type: "radio", name: "buffersize", value: "5", checked: buffersize === "5", onChange: this.onChange }),
+	                        " Strongly prefer six months at once"))),
+	            React.createElement("br", null),
+	            React.createElement("label", { htmlFor: "delay" }, "For visualizations that allowed viewing only one month of data at once, how much did loading delay affect the difficulty of using the visualization?"),
+	            React.createElement("br", null),
+	            React.createElement("div", { className: "radio-button-wrapper" },
+	                React.createElement("label", null,
+	                    React.createElement("input", { type: "radio", name: "delay", value: "1", checked: delay === "1", onChange: this.onChange }),
+	                    " No difficulty"),
+	                React.createElement("label", null,
+	                    React.createElement("input", { type: "radio", name: "delay", value: "2", checked: delay === "2", onChange: this.onChange }),
+	                    " Slight difficulty"),
+	                React.createElement("label", null,
+	                    React.createElement("input", { type: "radio", name: "delay", value: "3", checked: delay === "3", onChange: this.onChange }),
+	                    " Some difficulty"),
+	                React.createElement("label", null,
+	                    React.createElement("input", { type: "radio", name: "delay", value: "4", checked: delay === "4", onChange: this.onChange }),
+	                    " Large difficulty"),
+	                React.createElement("label", null,
+	                    React.createElement("input", { type: "radio", name: "delay", value: "5", checked: delay === "5", onChange: this.onChange }),
+	                    " Very large difficulty")),
+	            React.createElement("br", null),
+	            React.createElement("label", { htmlFor: "delaymultiple" }, "For visualizations that allowed viewing multiple months of data at once, how much did loading delay affect the difficulty of using the visualization?"),
+	            React.createElement("br", null),
+	            React.createElement("div", { className: "radio-button-wrapper" },
+	                React.createElement("label", null,
+	                    React.createElement("input", { type: "radio", name: "delaymultiple", value: "1", checked: delaymultiple === "1", onChange: this.onChange }),
+	                    " No difficulty"),
+	                React.createElement("label", null,
+	                    React.createElement("input", { type: "radio", name: "delaymultiple", value: "2", checked: delaymultiple === "2", onChange: this.onChange }),
+	                    " Slight difficulty"),
+	                React.createElement("label", null,
+	                    React.createElement("input", { type: "radio", name: "delaymultiple", value: "3", checked: delaymultiple === "3", onChange: this.onChange }),
+	                    " Some difficulty"),
+	                React.createElement("label", null,
+	                    React.createElement("input", { type: "radio", name: "delaymultiple", value: "4", checked: delaymultiple === "4", onChange: this.onChange }),
+	                    " Large difficulty"),
+	                React.createElement("label", null,
+	                    React.createElement("input", { type: "radio", name: "delaymultiple", value: "5", checked: delaymultiple === "5", onChange: this.onChange }),
+	                    " Very large difficulty")),
+	            React.createElement("br", null),
+	            React.createElement("label", { htmlFor: "experience" }, "Please describe your experience with the different visualization designs and delays. What did you find difficult or easy? Did you react differently between tasks? Was anything unclear? (optional):"),
+	            React.createElement("br", null),
+	            React.createElement("textarea", { id: "experience", name: "experience", onChange: this.onChange }),
+	            React.createElement("br", null),
+	            React.createElement("br", null),
+	            React.createElement("label", { htmlFor: "comments" }, "If you have any other comments about the tasks you just completed, the visualizations that you used, or the study procedure in general, please write them in the box below (optional):"),
+	            React.createElement("br", null),
+	            React.createElement("textarea", { id: "comments", name: "comments", onChange: this.onChange }),
+	            invalid,
+	            React.createElement("div", { className: "button-wrapper" },
+	                React.createElement("button", { onClick: this.onClick, disabled: disabled }, "Finish HIT"))));
+	    };
+	    return ExperimentUsability;
+	}(React.Component));
+	exports.default = ExperimentUsability;
 
 
 /***/ }
